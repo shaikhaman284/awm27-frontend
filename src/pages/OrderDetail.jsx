@@ -125,47 +125,47 @@ const OrderDetail = () => {
         </Link>
 
         <div className="max-w-4xl mx-auto">
-         {/* Header */}
-<div className="bg-white rounded-lg shadow p-6 mb-6">
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-      <h1 className="text-2xl font-bold mb-1">Order #{order.order_number}</h1>
-      <p className="text-sm text-gray-600">
-        Placed on{' '}
-        {new Date(order.created_at).toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })}
-      </p>
-    </div>
-    <div className="text-right">
-      <p className="text-3xl font-bold text-gray-900">₹{order.total_amount}</p>
-      <p className="text-sm text-gray-600">
-        {order.payment_status === 'paid' ? 'Paid' : 'Pay on Delivery'}
-      </p>
-    </div>
-  </div>
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold mb-1">Order #{order.order_number}</h1>
+                <p className="text-sm text-gray-600">
+                  Placed on{' '}
+                  {new Date(order.created_at).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gray-900">₹{order.total_amount}</p>
+                <p className="text-sm text-gray-600">
+                  {order.payment_status === 'paid' ? 'Paid' : 'Pay on Delivery'}
+                </p>
+              </div>
+            </div>
 
-  {/* Cancel Button */}
-  {canCancel && (
-    <div className="mt-4 pt-4 border-t">
-      <button
-        onClick={handleCancelOrder}
-        disabled={cancelling}
-        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-      >
-        <FiX className="w-5 h-5" />
-        {cancelling ? 'Cancelling...' : 'Cancel Order'}
-      </button>
-      <p className="text-xs text-gray-500 mt-2">
-        You can cancel this order before it is shipped
-      </p>
-    </div>
-  )}
-</div>
+            {/* Cancel Button */}
+            {canCancel && (
+              <div className="mt-4 pt-4 border-t">
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <FiX className="w-5 h-5" />
+                  {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  You can cancel this order before it is shipped
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Status Timeline */}
           {order.order_status !== 'cancelled' && (
@@ -348,7 +348,7 @@ const OrderDetail = () => {
                 <p className="font-semibold">{order.shop_name}</p>
                 <p className="text-sm text-gray-600">{order.shop_contact}</p>
               </div>
-
+              <a
                 href={`tel:${order.shop_contact}`}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >

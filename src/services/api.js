@@ -84,6 +84,7 @@ const apiService = {
   createOrder: (data) => api.post('/orders/create/', data),
   getMyOrders: (status) => api.get('/orders/my-orders/', { params: { status } }),
   getOrderDetail: (orderNumber) => api.get(`/orders/${orderNumber}/`),
+  cancelOrder: (orderNumber) => api.patch(`/orders/${orderNumber}/cancel/`, { order_status: 'cancelled' }),
 
   // Reviews
   createReview: (data) => api.post('/reviews/create/', data),
