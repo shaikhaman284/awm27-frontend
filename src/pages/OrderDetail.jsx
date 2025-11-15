@@ -11,7 +11,7 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cancelling, setCancelling] = useState(false); // Add this
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     loadOrderDetail();
@@ -32,7 +32,6 @@ const OrderDetail = () => {
     }
   };
 
-  // Add this function
   const handleCancelOrder = async () => {
     if (!window.confirm('Are you sure you want to cancel this order?')) {
       return;
@@ -42,7 +41,7 @@ const OrderDetail = () => {
       setCancelling(true);
       await apiService.cancelOrder(orderNumber);
       toast.success('Order cancelled successfully');
-      await loadOrderDetail(); // Reload order details
+      await loadOrderDetail();
     } catch (error) {
       const errorMsg = error.response?.data?.error || 'Failed to cancel order';
       toast.error(errorMsg);
@@ -115,8 +114,6 @@ const OrderDetail = () => {
   ];
 
   const currentStatusIndex = statusSteps.findIndex(s => s.key === order.order_status);
-
-  // Add this: Check if order can be cancelled
   const canCancel = ['placed', 'confirmed'].includes(order.order_status);
 
   return (
@@ -152,7 +149,7 @@ const OrderDetail = () => {
               </div>
             </div>
 
-            {/* Add Cancel Button Here */}
+            {/* Cancel Button */}
             {canCancel && (
               <div className="mt-4 pt-4 border-t">
                 <button
@@ -164,9 +161,7 @@ const OrderDetail = () => {
                   {cancelling ? 'Cancelling...' : 'Cancel Order'}
                 </button>
                 <p className="text-xs text-gray-500 mt-2">
-                  {order.order_status === 'placed'
-                    ? 'You can cancel this order before it is shipped'
-                    : 'Contact shop to cancel after confirmation'}
+                  You can cancel this order before it is shipped
                 </p>
               </div>
             )}
