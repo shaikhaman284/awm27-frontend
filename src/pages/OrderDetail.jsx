@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiCheck, FiPhone, FiMapPin, FiAlertCircle } from 'react-icons/fi';
+import { FiCheck, FiPhone, FiMapPin, FiAlertCircle, FiX } from 'react-icons/fi';
 import apiService from '../services/api';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelling, setCancelling] = useState(false); // Add this
 
   useEffect(() => {
     loadOrderDetail();
@@ -28,6 +29,25 @@ const OrderDetail = () => {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add this function
+  const handleCancelOrder = async () => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      await apiService.cancelOrder(orderNumber);
+      toast.success('Order cancelled successfully');
+      await loadOrderDetail(); // Reload order details
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Failed to cancel order';
+      toast.error(errorMsg);
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -96,6 +116,9 @@ const OrderDetail = () => {
 
   const currentStatusIndex = statusSteps.findIndex(s => s.key === order.order_status);
 
+  // Add this: Check if order can be cancelled
+  const canCancel = ['placed', 'confirmed'].includes(order.order_status);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
@@ -128,6 +151,25 @@ const OrderDetail = () => {
                 </p>
               </div>
             </div>
+
+            {/* Add Cancel Button Here */}
+            {canCancel && (
+              <div className="mt-4 pt-4 border-t">
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <FiX className="w-5 h-5" />
+                  {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  {order.order_status === 'placed'
+                    ? 'You can cancel this order before it is shipped'
+                    : 'Contact shop to cancel after confirmation'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Status Timeline */}
@@ -311,7 +353,7 @@ const OrderDetail = () => {
                 <p className="font-semibold">{order.shop_name}</p>
                 <p className="text-sm text-gray-600">{order.shop_contact}</p>
               </div>
-              <a
+
                 href={`tel:${order.shop_contact}`}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
