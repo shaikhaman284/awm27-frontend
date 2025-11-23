@@ -28,6 +28,9 @@ const ProductCard = ({ product }) => {
   const hasVariants = product.sizes?.length > 0 || product.colors?.length > 0;
   const inCart = isInCart(product.id, null, null);
 
+  // Calculate fake original price (display_price / 0.8 to show 20% discount)
+  const fakeOriginalPrice = Math.round(product.display_price / 0.8);
+
   return (
     <Link
       to={`/products/${product.id}`}
@@ -59,6 +62,11 @@ const ProductCard = ({ product }) => {
             Low Stock
           </div>
         )}
+
+        {/* Discount Badge */}
+        <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
+          20% OFF
+        </div>
       </div>
 
       {/* Content */}
@@ -84,30 +92,40 @@ const ProductCard = ({ product }) => {
         )}
 
         {/* Price */}
-        <div className="flex items-center justify-between mt-3">
-          <div>
-            <span className="text-xl font-bold text-gray-900">
-              ₹{product.display_price}
+        <div className="mt-3">
+          {/* Original Price & Discount */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm text-gray-500 line-through">
+              ₹{fakeOriginalPrice}
+            </span>
+            <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
+              20% OFF
             </span>
           </div>
 
-          {/* Quick Add Button */}
-          {product.stock_quantity > 0 && (
-            <button
-              onClick={handleQuickAdd}
-              disabled={hasVariants}
-              className={`p-2 rounded-full transition ${
-                hasVariants
-                  ? 'bg-gray-100 text-gray-400 cursor-default'
-                  : inCart
-                  ? 'bg-green-500 text-white'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-              title={hasVariants ? 'View details to select options' : 'Add to cart'}
-            >
-              <FiShoppingCart className="w-5 h-5" />
-            </button>
-          )}
+          {/* Display Price & Cart Button */}
+          <div className="flex items-center justify-between">
+            <span className="text-2xl font-bold text-blue-600">
+              ₹{product.display_price}
+            </span>
+
+            {/* Quick Add Button */}
+            {product.stock_quantity > 0 && (
+              <button
+                onClick={handleQuickAdd}
+                disabled={hasVariants}
+                className={`p-2 rounded-full transition ${hasVariants
+                    ? 'bg-gray-100 text-gray-400 cursor-default'
+                    : inCart
+                      ? 'bg-green-500 text-white'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                title={hasVariants ? 'View details to select options' : 'Add to cart'}
+              >
+                <FiShoppingCart className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Variants hint */}

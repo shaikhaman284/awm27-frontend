@@ -122,9 +122,8 @@ const Products = () => {
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <aside
-            className={`${
-              showFilters ? 'block' : 'hidden'
-            } md:block w-full md:w-64 bg-white p-6 rounded-lg shadow-md h-fit sticky top-20`}
+            className={`${showFilters ? 'block' : 'hidden'
+              } md:block w-full md:w-64 bg-white p-6 rounded-lg shadow-md h-fit sticky top-20`}
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-bold text-lg">Filters</h2>
@@ -164,14 +163,19 @@ const Products = () => {
                 >
                   <option value="">All Categories</option>
                   {categories.map((cat) => (
-                    <optgroup key={cat.id} label={cat.name}>
-                      <option value={cat.id}>{cat.name}</option>
-                      {cat.subcategories?.map((sub) => (
-                        <option key={sub.id} value={sub.id}>
-                          &nbsp;&nbsp;{sub.name}
-                        </option>
-                      ))}
-                    </optgroup>
+                    <React.Fragment key={cat.id}>
+                      {cat.subcategories && cat.subcategories.length > 0 ? (
+                        <optgroup label={cat.name}>
+                          {cat.subcategories.map((sub) => (
+                            <option key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        <option value={cat.id}>{cat.name}</option>
+                      )}
+                    </React.Fragment>
                   ))}
                 </select>
               </div>
