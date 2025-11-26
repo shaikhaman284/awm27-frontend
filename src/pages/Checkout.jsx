@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiCheck, FiChevronRight, FiEdit2, FiPackage } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
@@ -14,6 +14,7 @@ const Checkout = () => {
 
   const [step, setStep] = useState(1); // 1: Address, 2: Payment, 3: Review
   const [loading, setLoading] = useState(false);
+  const isOrderPlaced = useRef(false); // Track if order was successfully placed
 
   const [formData, setFormData] = useState({
     customer_name: user?.name || '',
@@ -40,7 +41,8 @@ const Checkout = () => {
   };
 
   useEffect(() => {
-    if (cart.length === 0) {
+    // Only redirect to cart if cart is empty AND order hasn't been placed
+    if (cart.length === 0 && !isOrderPlaced.current) {
       navigate('/cart');
     }
   }, [cart, navigate]);
