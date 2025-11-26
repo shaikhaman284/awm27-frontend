@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiStar } from 'react-icons/fi';
+import { FiStar, FiChevronRight } from 'react-icons/fi';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -71,30 +71,47 @@ const WriteReview = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Write a Review</h1>
+    <div className="min-h-screen bg-white">
+      {/* Breadcrumb */}
+      <div className="border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-2 text-sm">
+            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-black transition">
+              Home
+            </button>
+            <FiChevronRight className="w-4 h-4 text-gray-400" />
+            <button onClick={() => navigate('/orders')} className="text-gray-500 hover:text-black transition">
+              My Orders
+            </button>
+            <FiChevronRight className="w-4 h-4 text-gray-400" />
+            <span className="text-black font-medium">Write Review</span>
+          </div>
+        </div>
+      </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold mb-8">WRITE A REVIEW</h1>
+
+          <div className="border-2 border-gray-200 rounded-3xl p-6 md:p-8">
             {/* Product Info */}
-            <div className="flex gap-4 mb-6 pb-6 border-b">
-              <div className="w-20 h-20 bg-gray-100 rounded flex-shrink-0">
-                <span className="text-3xl flex items-center justify-center h-full">👕</span>
+            <div className="flex gap-4 mb-8 pb-8 border-b-2 border-gray-200">
+              <div className="w-24 h-24 bg-gray-100 rounded-2xl flex-shrink-0 flex items-center justify-center">
+                <span className="text-4xl">👕</span>
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{product.name}</h3>
+                <h3 className="font-bold text-xl mb-1">{product.name}</h3>
                 <p className="text-sm text-gray-600">{product.shop_name}</p>
               </div>
             </div>
 
             <form onSubmit={handleSubmit}>
               {/* Star Rating */}
-              <div className="mb-6">
-                <label className="block font-semibold mb-3">
+              <div className="mb-8">
+                <label className="block font-bold text-lg mb-4">
                   Rate this product <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -102,49 +119,60 @@ const WriteReview = () => {
                       onClick={() => setRating(star)}
                       onMouseEnter={() => setHoveredRating(star)}
                       onMouseLeave={() => setHoveredRating(0)}
-                      className="focus:outline-none transition-transform hover:scale-110"
+                      className="focus:outline-none transition-all hover:scale-110"
                     >
                       <FiStar
-                        className={`w-10 h-10 ${
-                          star <= (hoveredRating || rating)
-                            ? 'text-yellow-500 fill-current'
+                        className={`w-12 h-12 transition-colors ${star <= (hoveredRating || rating)
+                            ? 'text-yellow-400 fill-yellow-400'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}
                 </div>
                 {rating > 0 && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    You rated: {rating} {rating === 1 ? 'star' : 'stars'}
+                  <p className="text-sm text-gray-600 mt-3 font-medium">
+                    You rated: {rating}/5 {rating === 1 ? 'star' : 'stars'}
                   </p>
                 )}
               </div>
 
               {/* Review Text */}
-              <div className="mb-6">
-                <label className="block font-semibold mb-2">
-                  Your Review (Optional)
+              <div className="mb-8">
+                <label className="block font-bold text-lg mb-3">
+                  Share Your Experience (Optional)
                 </label>
                 <textarea
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   maxLength={500}
-                  rows={5}
-                  placeholder="Tell others what you think about this product..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={6}
+                  placeholder="Tell others what you think about this product. What did you like or dislike?"
+                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-black resize-none transition"
                 />
-                <p className="text-xs text-gray-500 mt-1 text-right">
-                  {reviewText.length}/500 characters
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-gray-500">
+                    Help others make informed decisions
+                  </p>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {reviewText.length}/500 characters
+                  </p>
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="mb-8 p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
+                <p className="text-sm text-gray-700">
+                  <span className="font-bold">Note:</span> Your review will be visible to all shoppers and will help others make informed purchase decisions.
                 </p>
               </div>
 
-              {/* Submit Button */}
-              <div className="flex gap-3">
+              {/* Submit Buttons */}
+              <div className="flex gap-4">
                 <button
                   type="button"
                   onClick={() => navigate('/orders')}
-                  className="flex-1 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50"
+                  className="flex-1 py-4 border-2 border-gray-300 text-gray-700 font-bold rounded-full hover:bg-gray-50 transition"
                   disabled={loading}
                 >
                   Cancel
@@ -152,9 +180,16 @@ const WriteReview = () => {
                 <button
                   type="submit"
                   disabled={loading || rating === 0}
-                  className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="flex-1 py-4 bg-black text-white font-bold rounded-full hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                 >
-                  {loading ? 'Submitting...' : 'Submit Review'}
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      Submitting...
+                    </span>
+                  ) : (
+                    'Submit Review'
+                  )}
                 </button>
               </div>
             </form>

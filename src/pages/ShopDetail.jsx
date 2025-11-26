@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { FiPhone, FiMapPin, FiPackage, FiFilter, FiSearch } from 'react-icons/fi';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { FiPhone, FiMapPin, FiPackage, FiFilter, FiSearch, FiChevronRight, FiChevronDown, FiX } from 'react-icons/fi';
 import apiService from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
 
 const ShopDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [shop, setShop] = useState(null);
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -21,6 +22,8 @@ const ShopDetail = () => {
     max_price: '',
     sort: 'newest'
   });
+
+  const [priceRange, setPriceRange] = useState([0, 10000]);
 
   useEffect(() => {
     loadCategories();
@@ -45,13 +48,31 @@ const ShopDetail = () => {
       setLoading(true);
       const shopRes = await apiService.getShopDetail(id);
       setShop(shopRes.data);
+
       const productsRes = await apiService.getProducts({ shop: id });
       setAllProducts(productsRes.data.results || []);
     } catch (error) {
+      console.error('Error loading shop details:', error);
       toast.error('Failed to load shop details');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCategoryNameById = (categoryId) => {
+    for (const cat of categories) {
+      if (cat.id === parseInt(categoryId)) {
+        return cat.name;
+      }
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        for (const sub of cat.subcategories) {
+          if (sub.id === parseInt(categoryId)) {
+            return sub.name;
+          }
+        }
+      }
+    }
+    return null;
   };
 
   const applyFilters = () => {
@@ -59,33 +80,36 @@ const ShopDetail = () => {
 
     if (filters.search) {
       filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(filters.search.toLowerCase())
+        product.name?.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
     if (filters.category) {
-      filtered = filtered.filter(product =>
-        product.category === parseInt(filters.category)
-      );
+      const selectedCategoryName = getCategoryNameById(filters.category);
+      if (selectedCategoryName) {
+        filtered = filtered.filter(product =>
+          product.category_name === selectedCategoryName
+        );
+      }
     }
 
     if (filters.min_price) {
       filtered = filtered.filter(product =>
-        product.display_price >= parseFloat(filters.min_price)
+        parseFloat(product.display_price) >= parseFloat(filters.min_price)
       );
     }
     if (filters.max_price) {
       filtered = filtered.filter(product =>
-        product.display_price <= parseFloat(filters.max_price)
+        parseFloat(product.display_price) <= parseFloat(filters.max_price)
       );
     }
 
     switch (filters.sort) {
       case 'price_low':
-        filtered.sort((a, b) => a.display_price - b.display_price);
+        filtered.sort((a, b) => parseFloat(a.display_price) - parseFloat(b.display_price));
         break;
       case 'price_high':
-        filtered.sort((a, b) => b.display_price - a.display_price);
+        filtered.sort((a, b) => parseFloat(b.display_price) - parseFloat(a.display_price));
         break;
       case 'newest':
       default:
@@ -100,6 +124,11 @@ const ShopDetail = () => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const handlePriceRangeApply = () => {
+    handleFilterChange('min_price', priceRange[0]);
+    handleFilterChange('max_price', priceRange[1]);
+  };
+
   const clearFilters = () => {
     setFilters({
       search: '',
@@ -108,6 +137,7 @@ const ShopDetail = () => {
       max_price: '',
       sort: 'newest'
     });
+    setPriceRange([0, 10000]);
   };
 
   const activeFilterCount = Object.values(filters).filter(v => v && v !== 'newest').length;
@@ -115,7 +145,7 @@ const ShopDetail = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-black"></div>
       </div>
     );
   }
@@ -124,8 +154,15 @@ const ShopDetail = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Shop not found</p>
-          <Link to="/products" className="text-blue-600 hover:underline">
+          <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+            <FiPackage className="w-12 h-12 text-gray-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Shop not found</h2>
+          <p className="text-gray-600 mb-6">The shop you're looking for doesn't exist</p>
+          <Link
+            to="/products"
+            className="inline-block px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition font-medium"
+          >
             Browse Products
           </Link>
         </div>
@@ -134,22 +171,31 @@ const ShopDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div
-        className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white"
-        style={{
-          backgroundImage: shop.shop_image ? `url(${shop.shop_image})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          minHeight: '400px'
-        }}
-      >
-        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div className="min-h-screen bg-white">
+      {/* Breadcrumb */}
+      <div className="border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <button onClick={() => navigate('/')} className="hover:text-black transition">
+              Home
+            </button>
+            <FiChevronRight className="w-4 h-4" />
+            <button onClick={() => navigate('/products')} className="hover:text-black transition">
+              Shop
+            </button>
+            <FiChevronRight className="w-4 h-4" />
+            <span className="text-black font-medium line-clamp-1">{shop.shop_name}</span>
+          </div>
+        </div>
+      </div>
 
-        <div className="container mx-auto px-4 py-16 relative z-10">
-          <div className="max-w-4xl">
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="w-32 h-32 bg-white rounded-lg flex-shrink-0 overflow-hidden shadow-lg">
+      {/* Shop Header */}
+      <section className="bg-gray-50 border-b border-gray-200">
+        <div className="container mx-auto px-4 py-12 md:py-16">
+          <div className="flex flex-col md:flex-row gap-8 items-start">
+            {/* Shop Logo */}
+            <div className="flex-shrink-0">
+              <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-3xl overflow-hidden shadow-lg border-4 border-white">
                 {shop.shop_image ? (
                   <img
                     src={shop.shop_image}
@@ -157,177 +203,287 @@ const ShopDetail = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-blue-600">
-                    <span className="text-5xl">🏪</span>
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <span className="text-6xl">🏪</span>
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="flex-1">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">{shop.shop_name}</h1>
+            {/* Shop Info */}
+            <div className="flex-1">
+              <h1 className="text-3xl md:text-5xl font-bold mb-4">{shop.shop_name}</h1>
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-start gap-2">
-                    <FiMapPin className="w-5 h-5 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-lg">{shop.address}</p>
-                      <p className="text-lg">{shop.city} - {shop.pincode}</p>
-                    </div>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                {/* Address */}
+                <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-200">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FiMapPin className="w-5 h-5 text-gray-700" />
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <FiPackage className="w-5 h-5" />
-                    <span className="text-lg">{allProducts.length} Products Available</span>
+                  <div>
+                    <p className="font-semibold text-sm text-gray-500 mb-1">Location</p>
+                    <p className="text-gray-900">{shop.address}</p>
+                    <p className="text-gray-900">{shop.city} - {shop.pincode}</p>
                   </div>
                 </div>
 
-                <a
-                  href={`tel:${shop.contact_number}`}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition shadow-lg text-lg"
-                >
-                  <FiPhone />
-                  Call Shop
-                </a>
+                {/* Products Count */}
+                <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-200">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FiPackage className="w-5 h-5 text-gray-700" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm text-gray-500 mb-1">Products</p>
+                    <p className="text-2xl font-bold">{allProducts.length}</p>
+                    <p className="text-sm text-gray-600">Items Available</p>
+                  </div>
+                </div>
               </div>
+
+              {/* Call Button */}
+              <a
+                href={`tel:${shop.contact_number}`}
+                className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition shadow-lg"
+              >
+                <FiPhone className="w-5 h-5" />
+                Call Shop
+              </a>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">Products from {shop.shop_name}</h2>
-            <p className="text-gray-600">{products.length} products found</p>
-          </div>
-
-          <div className="flex gap-3 w-full md:w-auto">
-            <select
-              value={filters.sort}
-              onChange={(e) => handleFilterChange('sort', e.target.value)}
-              className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="newest">Newest First</option>
-              <option value="price_low">Price: Low to High</option>
-              <option value="price_high">Price: High to Low</option>
-            </select>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-            >
-              <FiFilter />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-
+      {/* Products Section */}
+      <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="flex gap-6">
+          {/* Filters Sidebar */}
           <aside
-            className={`${showFilters ? 'block' : 'hidden'
-              } md:block w-full md:w-64 bg-white p-6 rounded-lg shadow-md h-fit sticky top-20`}
+            className={`${showFilters ? 'fixed inset-0 z-50 bg-white' : 'hidden'
+              } md:block md:relative w-full md:w-72 lg:w-80 md:flex-shrink-0`}
           >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-bold text-lg">Filters</h2>
-              {activeFilterCount > 0 && (
+            <div className="h-full md:border md:border-gray-200 md:rounded-3xl p-6 overflow-y-auto">
+              {/* Mobile Close Button */}
+              <div className="flex justify-between items-center mb-6 md:hidden">
+                <h2 className="text-xl font-bold">Filters</h2>
                 <button
-                  onClick={clearFilters}
-                  className="text-sm text-blue-600 hover:underline"
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
                 >
-                  Clear All
+                  <FiX className="w-6 h-6" />
                 </button>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Search</label>
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  placeholder="Search products..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
               </div>
-            </div>
 
-            {categories.length > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Category</label>
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              {/* Desktop Header */}
+              <div className="hidden md:flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Filters</h2>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-gray-600 hover:text-black transition"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-6">
+                {/* Search */}
+                <div>
+                  <div className="relative">
+                    <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      placeholder="Search products..."
+                      className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition"
+                    />
+                  </div>
+                </div>
+
+                <hr className="border-gray-200" />
+
+                {/* Categories */}
+                {categories.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-base mb-4 uppercase text-gray-900">Categories</h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      <label className="flex items-center gap-3 cursor-pointer group py-2">
+                        <input
+                          type="radio"
+                          name="category"
+                          value=""
+                          checked={filters.category === ''}
+                          onChange={(e) => handleFilterChange('category', '')}
+                          className="w-4 h-4 text-black focus:ring-black"
+                        />
+                        <span className="text-gray-700 group-hover:text-black transition">
+                          All Categories
+                        </span>
+                      </label>
+                      {categories.map((cat) => (
+                        <React.Fragment key={cat.id}>
+                          {cat.subcategories && cat.subcategories.length > 0 ? (
+                            <>
+                              <div className="font-semibold text-sm text-gray-500 mt-3 mb-1">
+                                {cat.name}
+                              </div>
+                              {cat.subcategories.map((sub) => (
+                                <label key={sub.id} className="flex items-center gap-3 cursor-pointer group py-2 pl-4">
+                                  <input
+                                    type="radio"
+                                    name="category"
+                                    value={sub.id}
+                                    checked={filters.category === String(sub.id)}
+                                    onChange={(e) => handleFilterChange('category', e.target.value)}
+                                    className="w-4 h-4 text-black focus:ring-black"
+                                  />
+                                  <span className="text-gray-700 group-hover:text-black transition text-sm">
+                                    {sub.name}
+                                  </span>
+                                </label>
+                              ))}
+                            </>
+                          ) : (
+                            <label className="flex items-center gap-3 cursor-pointer group py-2">
+                              <input
+                                type="radio"
+                                name="category"
+                                value={cat.id}
+                                checked={filters.category === String(cat.id)}
+                                onChange={(e) => handleFilterChange('category', e.target.value)}
+                                className="w-4 h-4 text-black focus:ring-black"
+                              />
+                              <span className="text-gray-700 group-hover:text-black transition">
+                                {cat.name}
+                              </span>
+                            </label>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <hr className="border-gray-200" />
+
+                {/* Price Range */}
+                <div>
+                  <h3 className="font-bold text-base mb-4 uppercase text-gray-900">Price</h3>
+                  <div className="space-y-4">
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          value={priceRange[0]}
+                          onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                          placeholder="Min"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          value={priceRange[1]}
+                          onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                          placeholder="Max"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={handlePriceRangeApply}
+                      className="w-full py-3 bg-black text-white rounded-full hover:bg-gray-800 transition font-medium"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Apply Button */}
+              <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="w-full py-4 bg-black text-white rounded-full hover:bg-gray-800 transition font-medium"
                 >
-                  <option value="">All Categories</option>
-                  {categories.map((cat) => (
-                    <React.Fragment key={cat.id}>
-                      {cat.subcategories && cat.subcategories.length > 0 ? (
-                        <optgroup label={cat.name}>
-                          {cat.subcategories.map((sub) => (
-                            <option key={sub.id} value={sub.id}>
-                              {sub.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ) : (
-                        <option value={cat.id}>{cat.name}</option>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Price Range</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={filters.min_price}
-                  onChange={(e) => handleFilterChange('min_price', e.target.value)}
-                  placeholder="Min"
-                  className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="number"
-                  value={filters.max_price}
-                  onChange={(e) => handleFilterChange('max_price', e.target.value)}
-                  placeholder="Max"
-                  className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+                  Show {products.length} Products
+                </button>
               </div>
             </div>
           </aside>
 
-          <main className="flex-1">
+          {/* Products Grid */}
+          <main className="flex-1 min-w-0">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-1">Products</h2>
+                <p className="text-gray-600 text-sm">
+                  Showing {products.length} of {allProducts.length} Products
+                </p>
+              </div>
+
+              {/* Sort & Filter */}
+              <div className="flex gap-3 w-full sm:w-auto">
+                {/* Mobile Filter Button */}
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="md:hidden flex-1 sm:flex-none px-6 py-3 bg-gray-100 rounded-full flex items-center justify-center gap-2 hover:bg-gray-200 transition font-medium"
+                >
+                  <FiFilter className="w-5 h-5" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="bg-black text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Sort Dropdown */}
+                <div className="relative flex-1 sm:flex-none">
+                  <select
+                    value={filters.sort}
+                    onChange={(e) => handleFilterChange('sort', e.target.value)}
+                    className="w-full appearance-none px-6 py-3 pr-10 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-black cursor-pointer font-medium hover:bg-gray-200 transition"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="price_low">Price: Low to High</option>
+                    <option value="price_high">Price: High to Low</option>
+                  </select>
+                  <FiChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Products */}
             {products.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white rounded-lg">
-                <FiPackage className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">
+              <div className="text-center py-32 bg-gray-50 rounded-3xl">
+                <div className="w-24 h-24 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-sm">
+                  <FiPackage className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">
                   {allProducts.length === 0
-                    ? 'No products available from this shop yet'
-                    : 'No products match your filters'}
+                    ? 'No products available'
+                    : 'No products found'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {allProducts.length === 0
+                    ? 'This shop hasn\'t added any products yet'
+                    : 'Try adjusting your filters or search terms'}
                 </p>
                 {activeFilterCount > 0 && (
                   <button
                     onClick={clearFilters}
-                    className="text-blue-600 hover:underline"
+                    className="px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition font-medium"
                   >
-                    Clear filters and try again
+                    Clear All Filters
                   </button>
                 )}
               </div>

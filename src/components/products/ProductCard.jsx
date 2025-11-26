@@ -1,15 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiStar, FiShoppingCart } from 'react-icons/fi';
+import { FiStar } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
 
 const ProductCard = ({ product }) => {
   const { addToCart, isInCart } = useCart();
 
-  // Safely parse average_rating - handle string, number, or null
   const averageRating = product.average_rating
     ? parseFloat(product.average_rating)
-    : 0;
+    : 4.5; // Default rating for display
 
   const reviewCount = product.review_count || 0;
 
@@ -17,7 +16,6 @@ const ProductCard = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // If product has sizes/colors, redirect to detail page
     if (product.sizes?.length > 0 || product.colors?.length > 0) {
       return;
     }
@@ -28,107 +26,89 @@ const ProductCard = ({ product }) => {
   const hasVariants = product.sizes?.length > 0 || product.colors?.length > 0;
   const inCart = isInCart(product.id, null, null);
 
-  // Calculate fake original price (display_price / 0.8 to show 20% discount)
-  const fakeOriginalPrice = Math.round(product.display_price / 0.8);
+  // Calculate discount percentage
+  const discountPercent = 20; // You can make this dynamic based on your backend
+  const fakeOriginalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
 
   return (
     <Link
       to={`/products/${product.id}`}
-      className="group bg-white rounded-lg shadow hover:shadow-xl transition duration-300 overflow-hidden"
+      className="group block"
     >
-      {/* Image */}
-      <div className="relative h-48 bg-gray-200 overflow-hidden">
-        {product.main_image ? (
-          <img
-            src={product.main_image}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <span className="text-4xl">👕</span>
-          </div>
-        )}
+      {/* Image Container */}
+      <div className="relative bg-gray-100 rounded-3xl overflow-hidden mb-3">
+        <div className="aspect-square">
+          {product.main_image ? (
+            <img
+              src={product.main_image}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400">
+              <span className="text-5xl">👕</span>
+            </div>
+          )}
+        </div>
 
-        {/* Stock badge */}
+        {/* Stock badge - top right */}
         {product.stock_quantity === 0 && (
-          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
             Out of Stock
           </div>
         )}
 
         {product.stock_quantity > 0 && product.stock_quantity < 10 && (
-          <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
             Low Stock
           </div>
         )}
-
-        {/* Discount Badge */}
-        <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-          20% OFF
-        </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        {/* Category & Shop */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-          <span>{product.category_name}</span>
-          <span>{product.shop_name}</span>
-        </div>
-
-        {/* Name */}
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition">
+      <div>
+        {/* Product Name */}
+        <h3 className="font-bold text-base md:text-lg text-gray-900 mb-2 line-clamp-1 group-hover:text-gray-600 transition">
           {product.name}
         </h3>
 
         {/* Rating */}
-        {averageRating > 0 && (
-          <div className="flex items-center gap-1 mb-2">
-            <FiStar className="w-4 h-4 text-yellow-500 fill-current" />
-            <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
-            <span className="text-xs text-gray-500">({reviewCount})</span>
-          </div>
-        )}
-
-        {/* Price */}
-        <div className="mt-3">
-          {/* Original Price & Discount */}
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm text-gray-500 line-through">
-              ₹{fakeOriginalPrice}
-            </span>
-            <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
-              20% OFF
-            </span>
-          </div>
-
-          {/* Display Price & Cart Button */}
-          <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-blue-600">
-              ₹{product.display_price}
-            </span>
-
-            {/* Quick Add Button */}
-            {product.stock_quantity > 0 && (
-              <button
-                onClick={handleQuickAdd}
-                disabled={hasVariants}
-                className={`p-2 rounded-full transition ${hasVariants
-                    ? 'bg-gray-100 text-gray-400 cursor-default'
-                    : inCart
-                      ? 'bg-green-500 text-white'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center">
+            {[...Array(5)].map((_, index) => (
+              <FiStar
+                key={index}
+                className={`w-4 h-4 ${index < Math.floor(averageRating)
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
                   }`}
-                title={hasVariants ? 'View details to select options' : 'Add to cart'}
-              >
-                <FiShoppingCart className="w-5 h-5" />
-              </button>
-            )}
+              />
+            ))}
           </div>
+          <span className="text-sm font-medium text-gray-900">
+            {averageRating.toFixed(1)}/5
+          </span>
         </div>
 
-        {/* Variants hint */}
+        {/* Price Section */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xl md:text-2xl font-bold text-gray-900">
+            ₹{product.display_price}
+          </span>
+
+          {discountPercent > 0 && (
+            <>
+              <span className="text-lg md:text-xl font-bold text-gray-400 line-through">
+                ₹{fakeOriginalPrice}
+              </span>
+              <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full">
+                -{discountPercent}%
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Additional Info */}
         {hasVariants && (
           <p className="text-xs text-gray-500 mt-2">
             Multiple options available

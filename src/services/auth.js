@@ -34,23 +34,26 @@ const authService = {
     return !!authService.getToken();
   },
 
-  // Setup reCAPTCHA
+  // Setup reCAPTCHA v2 (visible)
   setupRecaptcha: (elementId) => {
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        elementId,
-        {
-          size: 'invisible',  // Invisible works with reCAPTCHA v3
-          callback: () => {
-            console.log('reCAPTCHA verified');
-          },
-          'expired-callback': () => {
-            console.log('reCAPTCHA expired');
-            window.recaptchaVerifier = null;
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
+        size: 'normal', // Visible reCAPTCHA
+        callback: (response) => {
+          console.log('reCAPTCHA verified successfully');
+        },
+        'expired-callback': () => {
+          console.log('reCAPTCHA expired');
+          if (window.recaptchaVerifier) {
+            try {
+              window.recaptchaVerifier.clear();
+            } catch (e) {
+              console.error('Error clearing reCAPTCHA:', e);
+            }
           }
+          window.recaptchaVerifier = null;
         }
-      );
+      });
     }
     return window.recaptchaVerifier;
   },
@@ -66,7 +69,7 @@ const authService = {
       // Setup reCAPTCHA
       const recaptchaVerifier = authService.setupRecaptcha('recaptcha-container');
 
-      // Send OTP (reCAPTCHA will be verified automatically)
+      // Send OTP with Firebase
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         formattedPhone,
@@ -87,7 +90,7 @@ const authService = {
         try {
           window.recaptchaVerifier.clear();
         } catch (e) {
-          // Ignore clear errors
+          console.error('Error clearing reCAPTCHA:', e);
         }
         window.recaptchaVerifier = null;
       }
@@ -98,7 +101,9 @@ const authService = {
       } else if (error.code === 'auth/invalid-phone-number') {
         errorMessage = 'Invalid phone number';
       } else if (error.code === 'auth/invalid-app-credential') {
-        errorMessage = 'reCAPTCHA verification failed. Please try again.';
+        errorMessage = 'reCAPTCHA verification failed. Please refresh and try again.';
+      } else if (error.code === 'auth/captcha-check-failed') {
+        errorMessage = 'Please complete the reCAPTCHA verification.';
       }
 
       return {
@@ -133,6 +138,16 @@ const authService = {
       authService.setUser(user);
 
       console.log('Backend login successful');
+
+      // Clear reCAPTCHA after successful login
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.error('Error clearing reCAPTCHA:', e);
+        }
+        window.recaptchaVerifier = null;
+      }
 
       return { success: true, user };
     } catch (error) {
@@ -187,6 +202,16 @@ const authService = {
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_DATA);
       localStorage.removeItem(STORAGE_KEYS.CART);
+
+      // Clear reCAPTCHA on logout
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.error('Error clearing reCAPTCHA:', e);
+        }
+        window.recaptchaVerifier = null;
+      }
     }
   },
 
