@@ -93,8 +93,13 @@ const Checkout = () => {
 
       const response = await apiService.createOrder(orderData);
 
+      // Mark that order was successfully placed BEFORE clearing cart
+      isOrderPlaced.current = true;
+
       toast.success('Order placed successfully!');
       clearCart();
+
+      // Navigate to order success page
       navigate(`/order-success/${response.data.order.order_number}`);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to place order');
