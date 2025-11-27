@@ -90,6 +90,12 @@ const apiService = {
   createReview: (data) => api.post('/reviews/create/', data),
   getProductReviews: (productId, sort) =>
     api.get(`/reviews/product/${productId}/`, { params: { sort } }),
+
+  // Platform Stats
+  getPlatformStats: () => api.get('/shops/stats/'),
+
+  // Newsletter
+  subscribeNewsletter: (email) => api.post('/shops/newsletter/subscribe/', { email }),
 };
 
 export default apiService;

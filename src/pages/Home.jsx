@@ -13,6 +13,14 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
 
+  // Stats state
+  const [stats, setStats] = useState({
+    totalShops: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    totalVisitors: 0
+  });
+
   useEffect(() => {
     loadHomeData();
 
@@ -27,20 +35,43 @@ const Home = () => {
     try {
       setLoading(true);
 
+      // Load categories
       const categoriesRes = await apiService.getCategories();
       const mainCategories = categoriesRes.data.filter(cat =>
         !cat.parent && !cat.parent_id
       );
       setCategories(mainCategories);
 
+      // Load shops
       const shopsRes = await apiService.getApprovedShops('Amravati');
       setShops(shopsRes.data.slice(0, 4));
 
+      // Load featured products
       const productsRes = await apiService.getProducts({
         page_size: 8,
         sort: 'newest'
       });
       setFeaturedProducts(productsRes.data.results || []);
+
+      // Try to load real platform stats from backend
+      try {
+        const statsRes = await apiService.getPlatformStats();
+        setStats({
+          totalShops: statsRes.data.total_shops || 0,
+          totalProducts: statsRes.data.total_products || 0,
+          totalOrders: statsRes.data.total_customers || 0,
+          totalVisitors: statsRes.data.total_visitors || 0
+        });
+      } catch (statsError) {
+        // Fallback to calculated stats if API endpoint doesn't exist yet
+        console.warn('Stats API not available, using fallback data');
+        setStats({
+          totalShops: shopsRes.data.length || 0,
+          totalProducts: productsRes.data.count || 0,
+          totalOrders: Math.floor((productsRes.data.count || 0) * 0.3), // Estimate 30% conversion
+          totalVisitors: Math.floor((productsRes.data.count || 0) * 10) // Estimate 10 visitors per product
+        });
+      }
 
     } catch (error) {
       console.error('Error loading home data:', error);
@@ -86,6 +117,11 @@ const Home = () => {
       }
     }
     return '👕';
+  };
+
+  // Format large numbers (e.g., 1000 -> 1,000) with null safety
+  const formatNumber = (num) => {
+    return (num || 0).toLocaleString();
   };
 
   return (
@@ -152,19 +188,47 @@ const Home = () => {
               Shop Now
             </Link>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 md:gap-8 mt-12 max-w-2xl">
+            {/* Dynamic Stats - 4 columns */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 max-w-4xl">
               <div>
-                <div className="text-3xl md:text-4xl font-bold">200+</div>
-                <div className="text-gray-600 text-sm md:text-base">International Brands</div>
+                <div className="text-2xl md:text-3xl font-bold">
+                  {loading ? (
+                    <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
+                  ) : (
+                    `${formatNumber(stats.totalShops)}+`
+                  )}
+                </div>
+                <div className="text-gray-600 text-xs md:text-sm">Local Stores</div>
               </div>
-              <div className="border-l-2 border-gray-300 pl-4 md:pl-8">
-                <div className="text-3xl md:text-4xl font-bold">2,000+</div>
-                <div className="text-gray-600 text-sm md:text-base">Quality Products</div>
+              <div className="border-l-2 border-gray-300 pl-4">
+                <div className="text-2xl md:text-3xl font-bold">
+                  {loading ? (
+                    <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                  ) : (
+                    `${formatNumber(stats.totalProducts)}+`
+                  )}
+                </div>
+                <div className="text-gray-600 text-xs md:text-sm">Products</div>
               </div>
-              <div className="border-l-2 border-gray-300 pl-4 md:pl-8">
-                <div className="text-3xl md:text-4xl font-bold">30,000+</div>
-                <div className="text-gray-600 text-sm md:text-base">Happy Customers</div>
+              <div className="border-l-2 border-gray-300 pl-4">
+                <div className="text-2xl md:text-3xl font-bold">
+                  {loading ? (
+                    <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                  ) : (
+                    `${formatNumber(stats.totalOrders)}+`
+                  )}
+                </div>
+                <div className="text-gray-600 text-xs md:text-sm">Customers</div>
+              </div>
+              <div className="border-l-2 border-gray-300 pl-4">
+                <div className="text-2xl md:text-3xl font-bold">
+                  {loading ? (
+                    <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                  ) : (
+                    `${formatNumber(stats.totalVisitors)}+`
+                  )}
+                </div>
+                <div className="text-gray-600 text-xs md:text-sm">Visitors</div>
               </div>
             </div>
           </div>
