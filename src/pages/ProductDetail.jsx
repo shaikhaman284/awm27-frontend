@@ -130,7 +130,7 @@ const ProductDetail = () => {
             {/* Thumbnail Column */}
             <div className="flex flex-col gap-3 w-24">
               {images.length > 0 ? (
-                images.slice(0, 3).map((img, idx) => (
+                images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
@@ -177,8 +177,8 @@ const ProductDetail = () => {
                     <FiStar
                       key={i}
                       className={`w-5 h-5 ${i < Math.floor(averageRating)
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-gray-300'
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
                         }`}
                     />
                   ))}
@@ -239,8 +239,8 @@ const ProductDetail = () => {
                       key={size}
                       onClick={() => setSelectedSize(size)}
                       className={`px-6 py-3 rounded-full font-medium transition ${selectedSize === size
-                          ? 'bg-black text-white'
-                          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                         }`}
                     >
                       {size}
