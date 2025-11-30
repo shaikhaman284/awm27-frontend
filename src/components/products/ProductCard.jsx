@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiStar } from 'react-icons/fi';
+import { FiStar, FiPackage } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
 
 const ProductCard = ({ product }) => {
@@ -8,7 +8,7 @@ const ProductCard = ({ product }) => {
 
   const averageRating = product.average_rating
     ? parseFloat(product.average_rating)
-    : 4.5; // Default rating for display
+    : 4.5;
 
   const reviewCount = product.review_count || 0;
 
@@ -23,18 +23,45 @@ const ProductCard = ({ product }) => {
     addToCart(product, 1);
   };
 
-  const hasVariants = product.sizes?.length > 0 || product.colors?.length > 0;
+  const hasVariants = product.variants && product.variants.length > 0;
+  const hasSizeColorOptions = product.sizes?.length > 0 || product.colors?.length > 0;
   const inCart = isInCart(product.id, null, null);
 
   // Calculate discount percentage
-  const discountPercent = 20; // You can make this dynamic based on your backend
+  const discountPercent = 20;
   const fakeOriginalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
 
+  // NEW: Get variant stock info
+  const getVariantStockInfo = () => {
+    if (!hasVariants) {
+      return {
+        totalStock: product.stock_quantity,
+        hasLowStock: product.stock_quantity < 10 && product.stock_quantity > 0,
+        isOutOfStock: product.stock_quantity === 0,
+        outOfStockCount: 0,
+        lowStockCount: 0,
+      };
+    }
+
+    const activeVariants = product.variants.filter(v => v.is_active);
+    const totalStock = activeVariants.reduce((sum, v) => sum + v.stock_quantity, 0);
+    const outOfStockCount = activeVariants.filter(v => v.stock_quantity === 0).length;
+    const lowStockCount = activeVariants.filter(v => v.stock_quantity > 0 && v.stock_quantity < 10).length;
+
+    return {
+      totalStock,
+      hasLowStock: totalStock < 10 && totalStock > 0,
+      isOutOfStock: totalStock === 0,
+      outOfStockCount,
+      lowStockCount,
+      variantCount: activeVariants.length,
+    };
+  };
+
+  const stockInfo = getVariantStockInfo();
+
   return (
-    <Link
-      to={`/products/${product.id}`}
-      className="group block"
-    >
+    <Link to={`/products/${product.id}`} className="group block">
       {/* Image Container */}
       <div className="relative bg-gray-100 rounded-3xl overflow-hidden mb-3">
         <div className="aspect-square">
@@ -51,16 +78,30 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* Stock badge - top right */}
-        {product.stock_quantity === 0 && (
+        {/* NEW: Variant-aware stock badges */}
+        {stockInfo.isOutOfStock ? (
           <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
             Out of Stock
           </div>
-        )}
-
-        {product.stock_quantity > 0 && product.stock_quantity < 10 && (
+        ) : hasVariants && stockInfo.outOfStockCount > 0 ? (
+          <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+            {stockInfo.outOfStockCount} variant{stockInfo.outOfStockCount > 1 ? 's' : ''} unavailable
+          </div>
+        ) : hasVariants && stockInfo.lowStockCount > 0 ? (
+          <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+            {stockInfo.lowStockCount} variant{stockInfo.lowStockCount > 1 ? 's' : ''} low
+          </div>
+        ) : stockInfo.hasLowStock ? (
           <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
             Low Stock
+          </div>
+        ) : null}
+
+        {/* NEW: Variant count badge - bottom left */}
+        {hasVariants && (
+          <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
+            <FiPackage className="w-3 h-3" />
+            {stockInfo.variantCount} variant{stockInfo.variantCount > 1 ? 's' : ''}
           </div>
         )}
       </div>
@@ -79,8 +120,8 @@ const ProductCard = ({ product }) => {
               <FiStar
                 key={index}
                 className={`w-4 h-4 ${index < Math.floor(averageRating)
-                  ? 'fill-yellow-400 text-yellow-400'
-                  : 'text-gray-300'
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-gray-300'
                   }`}
               />
             ))}
@@ -108,12 +149,51 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* Additional Info */}
-        {hasVariants && (
-          <p className="text-xs text-gray-500 mt-2">
-            Multiple options available
-          </p>
-        )}
+        {/* NEW: Enhanced Additional Info */}
+        {hasVariants ? (
+          <div className="mt-2 space-y-1">
+            {product.sizes?.length > 0 && (
+              <p className="text-xs text-gray-600">
+                <span className="font-medium">Sizes:</span> {product.sizes.slice(0, 3).join(', ')}
+                {product.sizes.length > 3 && ` +${product.sizes.length - 3} more`}
+              </p>
+            )}
+            {product.colors?.length > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-600 font-medium">Colors:</span>
+                <div className="flex gap-1">
+                  {product.colors.slice(0, 4).map((color, idx) => (
+                    <div
+                      key={idx}
+                      className="w-4 h-4 rounded-full border border-gray-300"
+                      style={{
+                        backgroundColor:
+                          color === 'olive'
+                            ? '#808000'
+                            : color === 'green'
+                              ? '#008000'
+                              : color === 'navy'
+                                ? '#000080'
+                                : color.toLowerCase(),
+                      }}
+                      title={color}
+                    />
+                  ))}
+                  {product.colors.length > 4 && (
+                    <span className="text-xs text-gray-500">+{product.colors.length - 4}</span>
+                  )}
+                </div>
+              </div>
+            )}
+            {!stockInfo.isOutOfStock && (
+              <p className="text-xs text-green-600 font-medium">
+                {stockInfo.totalStock} total in stock
+              </p>
+            )}
+          </div>
+        ) : hasSizeColorOptions ? (
+          <p className="text-xs text-gray-500 mt-2">Multiple options available</p>
+        ) : null}
       </div>
     </Link>
   );

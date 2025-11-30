@@ -20,8 +20,8 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
   }, [cart]);
 
-  // Add item to cart
-  const addToCart = (product, quantity = 1, size = null, color = null) => {
+  // Add item to cart with variant support
+  const addToCart = (product, quantity = 1, size = null, color = null, variantId = null) => {
     // Check if product already in cart
     const existingItemIndex = cart.findIndex(
       item =>
@@ -30,32 +30,52 @@ export const CartProvider = ({ children }) => {
         item.color === color
     );
 
+    // Determine available stock (variant-specific or total)
+    let availableStock = product.stock_quantity;
+
+    if (variantId && product.variants) {
+      const variant = product.variants.find(v => v.id === variantId);
+      if (variant) {
+        availableStock = variant.stock_quantity;
+      }
+    }
+
     if (existingItemIndex > -1) {
       // Update quantity
       const newCart = [...cart];
-      newCart[existingItemIndex].quantity += quantity;
+      const newQuantity = newCart[existingItemIndex].quantity + quantity;
 
       // Check stock
-      if (newCart[existingItemIndex].quantity > product.stock_quantity) {
-        toast.error(`Only ${product.stock_quantity} items available in stock`);
+      if (newQuantity > availableStock) {
+        toast.error(`Only ${availableStock} items available in stock`);
         return;
       }
 
+      newCart[existingItemIndex].quantity = newQuantity;
       setCart(newCart);
       toast.success('Cart updated');
     } else {
       // Add new item
-      if (quantity > product.stock_quantity) {
-        toast.error(`Only ${product.stock_quantity} items available in stock`);
+      if (quantity > availableStock) {
+        toast.error(`Only ${availableStock} items available in stock`);
         return;
       }
 
-      setCart([...cart, { product, quantity, size, color }]);
+      setCart([
+        ...cart,
+        {
+          product,
+          quantity,
+          size,
+          color,
+          variantId, // NEW: Store variant ID
+        },
+      ]);
       toast.success('Added to cart');
     }
   };
 
-  // Update item quantity
+  // Update item quantity with variant awareness
   const updateQuantity = (productId, size, color, newQuantity) => {
     const item = cart.find(
       item =>
@@ -71,15 +91,27 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    if (newQuantity > item.product.stock_quantity) {
-      toast.error(`Only ${item.product.stock_quantity} items available`);
+    // Determine available stock
+    let availableStock = item.product.stock_quantity;
+
+    if (item.variantId && item.product.variants) {
+      const variant = item.product.variants.find(v => v.id === item.variantId);
+      if (variant) {
+        availableStock = variant.stock_quantity;
+      }
+    }
+
+    if (newQuantity > availableStock) {
+      toast.error(`Only ${availableStock} items available`);
       return;
     }
 
-    const newCart = cart.map(item =>
-      item.product.id === productId && item.size === size && item.color === color
-        ? { ...item, quantity: newQuantity }
-        : item
+    const newCart = cart.map(cartItem =>
+      cartItem.product.id === productId &&
+        cartItem.size === size &&
+        cartItem.color === color
+        ? { ...cartItem, quantity: newQuantity }
+        : cartItem
     );
 
     setCart(newCart);
@@ -120,7 +152,7 @@ export const CartProvider = ({ children }) => {
       subtotal: parseFloat(subtotal.toFixed(2)),
       codFee: parseFloat(codFee.toFixed(2)),
       total: parseFloat(total.toFixed(2)),
-      itemCount: cart.reduce((count, item) => count + item.quantity, 0)
+      itemCount: cart.reduce((count, item) => count + item.quantity, 0),
     };
   };
 
@@ -139,6 +171,16 @@ export const CartProvider = ({ children }) => {
     );
   };
 
+  // NEW: Get cart items formatted for checkout
+  const getCheckoutItems = () => {
+    return cart.map(item => ({
+      product_id: item.product.id,
+      quantity: item.quantity,
+      size: item.size || null,
+      color: item.color || null,
+    }));
+  };
+
   const value = {
     cart,
     addToCart,
@@ -147,7 +189,8 @@ export const CartProvider = ({ children }) => {
     clearCart,
     calculateTotals,
     getItemCount,
-    isInCart
+    isInCart,
+    getCheckoutItems, // NEW
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

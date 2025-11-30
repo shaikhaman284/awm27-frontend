@@ -21,15 +21,22 @@ const Cart = () => {
 
   // Helper function to get the first image from product
   const getProductImage = (product) => {
-    // Check if images array exists and has items
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       return product.images[0];
     }
-    // Fallback checks
     if (product.main_image) return product.main_image;
     if (product.image1) return product.image1;
     if (product.image) return product.image;
     return null;
+  };
+
+  // NEW: Get available stock for cart item
+  const getItemStock = (item) => {
+    if (item.variantId && item.product.variants) {
+      const variant = item.product.variants.find(v => v.id === item.variantId);
+      return variant ? variant.stock_quantity : item.product.stock_quantity;
+    }
+    return item.product.stock_quantity;
   };
 
   if (cart.length === 0) {
@@ -76,6 +83,7 @@ const Cart = () => {
             <div className="border-2 border-gray-200 rounded-3xl divide-y-2 divide-gray-200">
               {cart.map((item) => {
                 const imageUrl = getProductImage(item.product);
+                const availableStock = getItemStock(item); // NEW
 
                 return (
                   <div
@@ -122,19 +130,26 @@ const Cart = () => {
 
                       <p className="text-sm text-gray-600 mb-3">{item.product.shop_name}</p>
 
-                      {/* Variants */}
+                      {/* NEW: Variants Display - Enhanced */}
                       {(item.size || item.color) && (
-                        <div className="flex gap-2 text-sm mb-3">
+                        <div className="flex flex-wrap gap-2 text-sm mb-3">
                           {item.size && (
-                            <span className="bg-gray-100 px-3 py-1 rounded-full font-medium">
-                              Size: {item.size}
+                            <span className="bg-gray-100 px-3 py-1.5 rounded-full font-medium text-gray-700 border border-gray-200">
+                              <span className="text-gray-500">Size:</span> {item.size}
                             </span>
                           )}
                           {item.color && (
-                            <span className="bg-gray-100 px-3 py-1 rounded-full font-medium capitalize">
-                              Color: {item.color}
+                            <span className="bg-gray-100 px-3 py-1.5 rounded-full font-medium text-gray-700 border border-gray-200 capitalize">
+                              <span className="text-gray-500">Color:</span> {item.color}
                             </span>
                           )}
+                        </div>
+                      )}
+
+                      {/* NEW: Stock Warning */}
+                      {availableStock < 5 && availableStock > 0 && (
+                        <div className="mb-3 text-xs text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg inline-block">
+                          Only {availableStock} left in stock
                         </div>
                       )}
 
@@ -167,13 +182,21 @@ const Cart = () => {
                                 item.quantity + 1
                               )
                             }
-                            disabled={item.quantity >= item.product.stock_quantity}
+                            disabled={item.quantity >= availableStock}
                             className="w-7 h-7 flex items-center justify-center hover:bg-gray-200 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={item.quantity >= availableStock ? 'Maximum stock reached' : 'Increase quantity'}
                           >
                             <FiPlus className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
+
+                      {/* Item Subtotal */}
+                      {item.quantity > 1 && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          Subtotal: ₹{(item.product.display_price * item.quantity).toFixed(2)}
+                        </div>
+                      )}
 
                       {/* Remove Button - Mobile */}
                       <button
@@ -188,6 +211,15 @@ const Cart = () => {
                 );
               })}
             </div>
+
+            {/* NEW: Variant Info Banner
+            {cart.some(item => item.size || item.color) && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Selected variants are reserved in your cart. Stock availability is checked at checkout.
+                </p>
+              </div>
+            )} */}
           </div>
 
           {/* Order Summary */}
@@ -236,6 +268,11 @@ const Cart = () => {
                 <div className="flex justify-between text-xl">
                   <span className="font-bold">Total</span>
                   <span className="font-bold">₹{totals.total.toFixed(2)}</span>
+                </div>
+
+                {/* NEW: Item count with variants */}
+                <div className="text-sm text-gray-600">
+                  {totals.itemCount} {totals.itemCount === 1 ? 'item' : 'items'} in cart
                 </div>
               </div>
 
