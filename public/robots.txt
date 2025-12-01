@@ -1,7 +1,11 @@
-# Robots.txt for Amravati Wears Market
+# robots.txt for Amravati Wears Market
+# Optimized for Google Search Console
 
 User-agent: *
 Allow: /
+Allow: /sitemap.xml
+
+# Block private/user pages
 Disallow: /cart
 Disallow: /checkout
 Disallow: /orders
@@ -9,6 +13,14 @@ Disallow: /order-success
 Disallow: /profile
 Disallow: /write-review
 Disallow: /login
+
+# Allow all products and public pages
+Allow: /products
+Allow: /products/*
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.webp$
 
 # Sitemap location
 Sitemap: https://awm27.shop/sitemap.xml
