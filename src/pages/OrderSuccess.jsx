@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiCheckCircle, FiPackage, FiHome, FiChevronRight } from 'react-icons/fi';
 import apiService from '../services/api';
+import SEO from '../components/common/SEO';
+
 
 const OrderSuccess = () => {
   const { orderNumber } = useParams();
@@ -34,6 +36,12 @@ const OrderSuccess = () => {
   if (!order) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
+        <SEO
+          title="Order Not Found | Amravati Wears Market"
+          description="The order confirmation could not be found."
+          url="https://awm27.shop/order-success"
+          noindex={true}
+        />
         <div className="text-center max-w-md px-4">
           <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
             <FiPackage className="w-12 h-12 text-gray-400" />
@@ -53,6 +61,12 @@ const OrderSuccess = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`Order Confirmed - #${order.order_number} | Amravati Wears Market`}
+        description={`Your order #${order.order_number} has been placed successfully. Total: ₹${order.total_amount}. Payment: Cash on Delivery. Estimated delivery: 2-3 business days.`}
+        url={`https://awm27.shop/order-success/${order.order_number}`}
+        noindex={true}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">

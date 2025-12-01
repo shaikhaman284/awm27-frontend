@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiPhone, FiUser, FiLock, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,6 +18,21 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [useTestMode, setUseTestMode] = useState(true); // Toggle for test mode
+
+  // Generate dynamic title based on step
+  const getPageTitle = () => {
+    if (step === 1) {
+      return 'Login to Your Account | Amravati Wears Market';
+    }
+    return 'Verify OTP | Amravati Wears Market';
+  };
+
+  const getPageDescription = () => {
+    if (step === 1) {
+      return 'Login to Amravati Wears Market. Shop from local clothing stores with Cash on Delivery. Secure OTP-based authentication.';
+    }
+    return 'Verify the OTP sent to your phone to complete login. Secure authentication for Amravati Wears Market.';
+  };
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -103,6 +120,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
+      <SEO
+        title={getPageTitle()}
+        description={getPageDescription()}
+        url="https://awm27.shop/login"
+        noindex={true}
+      />
       <div className="max-w-md w-full">
         {/* Back Button */}
         <button

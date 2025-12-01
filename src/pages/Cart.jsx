@@ -4,6 +4,8 @@ import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiChevronRight, FiTag, FiArro
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { COD_FEE_THRESHOLD } from '../utils/constants';
+import SEO from '../components/common/SEO';
+
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -42,6 +44,12 @@ const Cart = () => {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center py-16 px-4">
+        <SEO
+          title="Shopping Cart - Empty | Amravati Wears Market"
+          description="Your shopping cart is empty. Start shopping for quality clothing from local Amravati stores."
+          url="https://awm27.shop/cart"
+          noindex={true}
+        />
         <div className="text-center max-w-md">
           <div className="w-32 h-32 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
             <FiShoppingBag className="w-16 h-16 text-gray-400" />
@@ -61,6 +69,12 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`Shopping Cart (${totals.itemCount} ${totals.itemCount === 1 ? 'Item' : 'Items'}) | Amravati Wears Market`}
+        description={`Review your shopping cart with ${totals.itemCount} items. Total: ₹${totals.total.toFixed(2)}. Proceed to checkout for Cash on Delivery.`}
+        url="https://awm27.shop/cart"
+        noindex={true}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">

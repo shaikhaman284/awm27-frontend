@@ -5,6 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -112,6 +114,17 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`Checkout - Step ${step} of 3 | Amravati Wears Market`}
+        description={`Complete your order checkout. ${step === 1
+            ? 'Enter delivery address.'
+            : step === 2
+              ? 'Select payment method.'
+              : 'Review and place your order.'
+          } Total: ₹${totals.total.toFixed(2)}`}
+        url="https://awm27.shop/checkout"
+        noindex={true}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">

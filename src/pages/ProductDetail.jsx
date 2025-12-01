@@ -5,6 +5,7 @@ import apiService from '../services/api';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -24,6 +25,165 @@ const ProductDetail = () => {
   // NEW: Variant state
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [availableStock, setAvailableStock] = useState(0);
+
+  // Generate dynamic product schema with variants
+  const getProductSchema = () => {
+    if (!product) return {};
+
+    const hasVariants = product.variants && product.variants.length > 0;
+
+    // Determine availability
+    let availability = "https://schema.org/OutOfStock";
+    if (hasVariants) {
+      // If any variant has stock, product is available
+      const hasStock = product.variants.some(v => v.stock_quantity > 0);
+      availability = hasStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
+    } else {
+      availability = product.stock_quantity > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock";
+    }
+
+    const baseSchema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "@id": `https://awm27.shop/products/${product.id}`,
+      "name": product.name,
+      "description": product.description || `${product.name} available at ${product.shop_name} in Amravati`,
+      "image": product.images || [],
+      "sku": product.id.toString(),
+      "brand": {
+        "@type": "Brand",
+        "name": product.shop_name || "Amravati Wears Market"
+      },
+      "category": product.category_name,
+      "offers": {
+        "@type": "Offer",
+        "url": `https://awm27.shop/products/${product.id}`,
+        "priceCurrency": "INR",
+        "price": product.display_price,
+        "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        "availability": availability,
+        "itemCondition": "https://schema.org/NewCondition",
+        "seller": {
+          "@type": "Organization",
+          "name": product.shop_name || "Amravati Wears Market"
+        },
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "shippingRate": {
+            "@type": "MonetaryAmount",
+            "value": "0",
+            "currency": "INR"
+          },
+          "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "IN",
+            "addressRegion": "Maharashtra"
+          },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "businessDays": {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+            },
+            "cutoffTime": "18:00:00",
+            "handlingTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 1,
+              "maxValue": 2,
+              "unitCode": "DAY"
+            },
+            "transitTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 2,
+              "maxValue": 5,
+              "unitCode": "DAY"
+            }
+          }
+        },
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 7,
+          "returnMethod": "https://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/FreeReturn"
+        }
+      }
+    };
+
+    // Add aggregate rating if reviews exist
+    if (averageRating > 0 && reviewCount > 0) {
+      baseSchema.aggregateRating = {
+        "@type": "AggregateRating",
+        "ratingValue": averageRating.toFixed(1),
+        "reviewCount": reviewCount,
+        "bestRating": "5",
+        "worstRating": "1"
+      };
+    }
+
+    // Add reviews if they exist
+    if (reviews.length > 0) {
+      baseSchema.review = reviews.slice(0, 5).map(review => ({
+        "@type": "Review",
+        "author": {
+          "@type": "Person",
+          "name": review.customer_name
+        },
+        "datePublished": review.created_at,
+        "reviewBody": review.review_text || "",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": review.rating,
+          "bestRating": "5",
+          "worstRating": "1"
+        }
+      }));
+    }
+
+    // Add variant information if product has sizes or colors
+    if (product.sizes && product.sizes.length > 0) {
+      baseSchema.size = product.sizes;
+    }
+    if (product.colors && product.colors.length > 0) {
+      baseSchema.color = product.colors;
+    }
+
+    // Add breadcrumb
+    baseSchema.breadcrumb = {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://awm27.shop"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Shop",
+          "item": "https://awm27.shop/products"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": product.category_name || "Products",
+          "item": `https://awm27.shop/products?category=${product.category_id || ''}`
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": product.name,
+          "item": `https://awm27.shop/products/${product.id}`
+        }
+      ]
+    };
+
+    return baseSchema;
+  };
+
 
   useEffect(() => {
     loadProductDetail();
@@ -173,6 +333,15 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`${product.name} - ${product.shop_name} | Amravati Wears Market`}
+        description={`Buy ${product.name} online from ${product.shop_name} in Amravati. ₹${product.display_price}. ${product.sizes?.length > 0 ? `Available in sizes: ${product.sizes.join(', ')}. ` : ''}${product.colors?.length > 0 ? `Colors: ${product.colors.join(', ')}. ` : ''}${averageRating > 0 ? `Rated ${averageRating}/5 (${reviewCount} reviews). ` : ''}Cash on Delivery available. Free COD on orders ≥ ₹500.`}
+        keywords={`${product.name}, ${product.category_name}, ${product.shop_name}, buy online Amravati, ${product.sizes?.join(', ')}, ${product.colors?.join(', ')}, COD available`}
+        url={`https://awm27.shop/products/${product.id}`}
+        image={images[0] || "https://awm27.shop/default-product-image.jpg"}
+        type="product"
+        structuredData={getProductSchema()}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">

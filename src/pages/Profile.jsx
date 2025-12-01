@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiPhone, FiLogOut, FiPackage, FiChevronRight } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/common/SEO';
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -21,6 +23,12 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`${user.name}'s Profile | Amravati Wears Market`}
+        description="Manage your account settings, view profile information, and access your orders. Your personal profile on Amravati Wears Market."
+        url="https://awm27.shop/profile"
+        noindex={true}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">

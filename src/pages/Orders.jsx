@@ -4,12 +4,33 @@ import { FiPackage, FiRefreshCw, FiChevronRight, FiClock, FiCheckCircle } from '
 import apiService from '../services/api';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
 
 const Orders = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // all, active, completed, cancelled
+
+  // Generate dynamic title based on active tab
+  const getPageTitle = () => {
+    const tabTitles = {
+      'all': 'All Orders',
+      'active': 'Active Orders',
+      'completed': 'Completed Orders',
+      'cancelled': 'Cancelled Orders'
+    };
+    return `${tabTitles[activeTab]} (${orders.length}) | My Orders`;
+  };
+
+  const getPageDescription = () => {
+    if (orders.length === 0) {
+      return `You have no ${activeTab === 'all' ? '' : activeTab} orders. Start shopping from local Amravati stores.`;
+    }
+    return `View your ${activeTab === 'all' ? '' : activeTab} orders. ${orders.length} ${orders.length === 1 ? 'order' : 'orders'} found. Track delivery status and manage your purchases.`;
+  };
+
 
   useEffect(() => {
     loadOrders();
@@ -63,6 +84,12 @@ const Orders = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={getPageTitle()}
+        description={getPageDescription()}
+        url="https://awm27.shop/orders"
+        noindex={true}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
@@ -106,8 +133,8 @@ const Orders = () => {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-6 py-3 rounded-full font-semibold whitespace-nowrap transition ${activeTab === tab.key
-                  ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-black text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               {tab.label}

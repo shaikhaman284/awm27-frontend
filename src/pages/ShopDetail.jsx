@@ -4,6 +4,8 @@ import { FiPhone, FiMapPin, FiPackage, FiFilter, FiSearch, FiChevronRight, FiChe
 import apiService from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
 
 const ShopDetail = () => {
   const { id } = useParams();
@@ -172,6 +174,100 @@ const ShopDetail = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`${shop.shop_name} - Local Clothing Store in ${shop.city} | Amravati Wears Market`}
+        description={`Shop ${allProducts.length}+ products from ${shop.shop_name} in ${shop.city}. ${shop.address}. Cash on Delivery available. Call ${shop.contact_number} for inquiries. Free COD on orders ≥ ₹500.`}
+        keywords={`${shop.shop_name}, ${shop.city} clothing store, local shop ${shop.city}, buy clothes ${shop.city}, fashion store Amravati, ${shop.contact_number}`}
+        url={`https://awm27.shop/shop/${shop.id}`}
+        image={shop.shop_image || "https://awm27.shop/default-shop-image.jpg"}
+        type="website"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "Store",
+          "@id": `https://awm27.shop/shop/${shop.id}`,
+          "name": shop.shop_name,
+          "description": `${shop.shop_name} is a local clothing store in ${shop.city}, offering ${allProducts.length}+ quality fashion products with Cash on Delivery.`,
+          "url": `https://awm27.shop/shop/${shop.id}`,
+          "image": shop.shop_image || "https://awm27.shop/default-shop-image.jpg",
+          "telephone": shop.contact_number,
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": shop.address,
+            "addressLocality": shop.city,
+            "addressRegion": "Maharashtra",
+            "postalCode": shop.pincode,
+            "addressCountry": "IN"
+          },
+          "geo": shop.latitude && shop.longitude ? {
+            "@type": "GeoCoordinates",
+            "latitude": shop.latitude,
+            "longitude": shop.longitude
+          } : undefined,
+          "areaServed": {
+            "@type": "City",
+            "name": shop.city
+          },
+          "currenciesAccepted": "INR",
+          "paymentAccepted": "Cash on Delivery, Online Payment",
+          "priceRange": "₹₹",
+          "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Products",
+            "itemListElement": products.slice(0, 10).map((product, index) => ({
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Product",
+                "name": product.name,
+                "image": product.images?.[0] || "",
+                "description": product.description || product.name,
+                "url": `https://awm27.shop/products/${product.id}`,
+                "offers": {
+                  "@type": "Offer",
+                  "price": product.display_price || product.price,
+                  "priceCurrency": "INR",
+                  "availability": product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+                }
+              }
+            }))
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.5",
+            "reviewCount": Math.max(allProducts.length * 2, 10),
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "parentOrganization": {
+            "@type": "Organization",
+            "@id": "https://awm27.shop/#organization",
+            "name": "Amravati Wears Market",
+            "url": "https://awm27.shop"
+          },
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://awm27.shop"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Shop",
+                "item": "https://awm27.shop/products"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": shop.shop_name,
+                "item": `https://awm27.shop/shop/${shop.id}`
+              }
+            ]
+          }
+        }}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">

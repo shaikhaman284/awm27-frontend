@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FiStar, FiChevronRight } from 'react-icons/fi';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
 
 const WriteReview = () => {
   const navigate = useNavigate();
@@ -72,6 +74,12 @@ const WriteReview = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`Write Review - ${product.name} | Amravati Wears Market`}
+        description={`Share your experience with ${product.name} from ${product.shop_name}. Help other shoppers make informed decisions.`}
+        url="https://awm27.shop/write-review"
+        noindex={true}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
@@ -123,8 +131,8 @@ const WriteReview = () => {
                     >
                       <FiStar
                         className={`w-12 h-12 transition-colors ${star <= (hoveredRating || rating)
-                            ? 'text-yellow-400 fill-yellow-400'
-                            : 'text-gray-300'
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
                           }`}
                       />
                     </button>

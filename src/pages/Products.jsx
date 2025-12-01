@@ -4,6 +4,8 @@ import { FiFilter, FiX, FiSearch, FiChevronDown, FiChevronRight } from 'react-ic
 import apiService from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,6 +30,54 @@ const Products = () => {
     filters.min_price || 0,
     filters.max_price || 10000
   ]);
+
+  // Generate dynamic title based on filters
+  const getPageTitle = () => {
+    const parts = [];
+
+    if (filters.search) {
+      parts.push(`"${filters.search}"`);
+    }
+
+    if (filters.category) {
+      const category = categories.find(c => String(c.id) === filters.category);
+      if (category) {
+        parts.push(category.name);
+      } else {
+        // Check subcategories
+        for (const cat of categories) {
+          if (cat.subcategories) {
+            const subcat = cat.subcategories.find(s => String(s.id) === filters.category);
+            if (subcat) {
+              parts.push(subcat.name);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (parts.length > 0) {
+      return `${parts.join(' - ')} | Shop Online | Amravati Wears Market`;
+    }
+
+    return 'Shop Clothing Online - Latest Fashion Collection | Amravati Wears Market';
+  };
+
+  const getPageDescription = () => {
+    if (filters.search) {
+      return `Search results for "${filters.search}". Browse ${products.length}+ products from local Amravati stores. Cash on Delivery available. Free COD on orders ≥ ₹500.`;
+    }
+
+    if (filters.category) {
+      const category = categories.find(c => String(c.id) === filters.category);
+      const catName = category?.name || 'products';
+      return `Shop ${catName} online from trusted Amravati stores. Wide collection with Cash on Delivery. ${products.length}+ items available. Free COD on orders ≥ ₹500.`;
+    }
+
+    return `Browse ${products.length}+ clothing products from local Amravati stores. Men's, women's, kids wear with Cash on Delivery. Free COD on orders ≥ ₹500. Shop now!`;
+  };
+
 
   useEffect(() => {
     loadCategories();
@@ -93,6 +143,66 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-white">
+
+      <SEO
+        title={getPageTitle()}
+        description={getPageDescription()}
+        keywords="buy clothes online Amravati, fashion shopping, men clothing, women clothing, kids wear, ethnic wear, casual wear, formal wear, online shopping COD"
+        url={`https://awm27.shop/products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
+        type="website"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": getPageTitle(),
+          "description": getPageDescription(),
+          "url": `https://awm27.shop/products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`,
+          "mainEntity": {
+            "@type": "ItemList",
+            "numberOfItems": products.length,
+            "itemListElement": products.slice(0, 10).map((product, index) => ({
+              "@type": "ListItem",
+              "position": index + 1,
+              "item": {
+                "@type": "Product",
+                "@id": `https://awm27.shop/products/${product.id}`,
+                "name": product.name,
+                "image": product.images?.[0] || "",
+                "description": product.description || product.name,
+                "url": `https://awm27.shop/products/${product.id}`,
+                "offers": {
+                  "@type": "Offer",
+                  "price": product.display_price || product.price,
+                  "priceCurrency": "INR",
+                  "availability": product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                  "seller": {
+                    "@type": "Organization",
+                    "name": product.shop_name || "Amravati Wears Market"
+                  }
+                }
+              }
+            }))
+          },
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://awm27.shop"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Shop",
+                "item": "https://awm27.shop/products"
+              }
+            ]
+          }
+        }}
+      />
+
+
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
@@ -334,8 +444,8 @@ const Products = () => {
                         <button
                           key={idx}
                           className={`w-10 h-10 rounded-lg font-medium transition ${page === 1
-                              ? 'bg-gray-100 text-black'
-                              : 'hover:bg-gray-50 text-gray-600'
+                            ? 'bg-gray-100 text-black'
+                            : 'hover:bg-gray-50 text-gray-600'
                             }`}
                         >
                           {page}

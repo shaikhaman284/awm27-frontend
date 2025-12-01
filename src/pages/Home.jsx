@@ -4,6 +4,7 @@ import { FiSearch, FiShoppingBag, FiTruck, FiShield, FiStar } from 'react-icons/
 import apiService from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -126,6 +127,46 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-white">
+
+      <SEO
+        title="Amravati Wears Market - Local Clothing & Fashion Marketplace"
+        description="Shop from trusted local clothing stores in Amravati. Wide collection of men's, women's, kids wear, ethnic, western & casual clothing with Cash on Delivery. Free COD on orders ≥ ₹500."
+        keywords="Amravati clothing, local cloth market, fashion Amravati, online shopping Amravati, ethnic wear, western wear, kids clothing, sarees, kurta, jeans, shirts, COD available"
+        url="https://awm27.shop"
+        image="https://awm27.shop/og-image.jpg"
+        type="website"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Amravati Wears Market",
+          "url": "https://awm27.shop",
+          "description": "Amravati's first local cloth marketplace connecting customers with trusted local clothing stores",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://awm27.shop/products?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "@id": "https://awm27.shop/#organization",
+            "name": "Amravati Wears Market",
+            "url": "https://awm27.shop",
+            "logo": "https://awm27.shop/logo.png",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Amravati",
+              "addressRegion": "Maharashtra",
+              "addressCountry": "IN"
+            },
+            "areaServed": {
+              "@type": "City",
+              "name": "Amravati"
+            }
+          }
+        }}
+      />
+
+
       {/* Welcome Popup */}
       {showWelcome && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
