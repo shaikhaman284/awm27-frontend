@@ -1,38 +1,49 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FiStar, FiPackage } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
 
-const ProductCard = ({ product }) => {
+// PERFORMANCE: Memoize the entire component to prevent unnecessary re-renders
+const ProductCard = React.memo(({ product }) => {
   const { addToCart, isInCart } = useCart();
 
-  const averageRating = product.average_rating
-    ? parseFloat(product.average_rating)
-    : 4.5;
+  // PERFORMANCE: Memoize expensive calculations
+  const averageRating = useMemo(
+    () => (product.average_rating ? parseFloat(product.average_rating) : 4.5),
+    [product.average_rating]
+  );
 
-  const reviewCount = product.review_count || 0;
+  const reviewCount = useMemo(
+    () => product.review_count || 0,
+    [product.review_count]
+  );
 
-  const handleQuickAdd = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const hasVariants = useMemo(
+    () => product.variants && product.variants.length > 0,
+    [product.variants]
+  );
 
-    if (product.sizes?.length > 0 || product.colors?.length > 0) {
-      return;
-    }
+  const hasSizeColorOptions = useMemo(
+    () => product.sizes?.length > 0 || product.colors?.length > 0,
+    [product.sizes, product.colors]
+  );
 
-    addToCart(product, 1);
-  };
+  const inCart = useMemo(
+    () => isInCart(product.id, null, null),
+    [isInCart, product.id]
+  );
 
-  const hasVariants = product.variants && product.variants.length > 0;
-  const hasSizeColorOptions = product.sizes?.length > 0 || product.colors?.length > 0;
-  const inCart = isInCart(product.id, null, null);
+  // PERFORMANCE: Memoize discount calculation
+  const priceInfo = useMemo(() => {
+    const discountPercent = 20;
+    const fakeOriginalPrice = Math.round(
+      product.display_price / (1 - discountPercent / 100)
+    );
+    return { discountPercent, fakeOriginalPrice };
+  }, [product.display_price]);
 
-  // Calculate discount percentage
-  const discountPercent = 20;
-  const fakeOriginalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
-
-  // Get variant stock info
-  const getVariantStockInfo = () => {
+  // PERFORMANCE: Memoize stock info calculation (expensive operation)
+  const stockInfo = useMemo(() => {
     if (!hasVariants) {
       return {
         totalStock: product.stock_quantity,
@@ -43,10 +54,12 @@ const ProductCard = ({ product }) => {
       };
     }
 
-    const activeVariants = product.variants.filter(v => v.is_active);
+    const activeVariants = product.variants.filter((v) => v.is_active);
     const totalStock = activeVariants.reduce((sum, v) => sum + v.stock_quantity, 0);
-    const outOfStockCount = activeVariants.filter(v => v.stock_quantity === 0).length;
-    const lowStockCount = activeVariants.filter(v => v.stock_quantity > 0 && v.stock_quantity < 10).length;
+    const outOfStockCount = activeVariants.filter((v) => v.stock_quantity === 0).length;
+    const lowStockCount = activeVariants.filter(
+      (v) => v.stock_quantity > 0 && v.stock_quantity < 10
+    ).length;
 
     return {
       totalStock,
@@ -56,9 +69,32 @@ const ProductCard = ({ product }) => {
       lowStockCount,
       variantCount: activeVariants.length,
     };
-  };
+  }, [hasVariants, product.stock_quantity, product.variants]);
 
-  const stockInfo = getVariantStockInfo();
+  // PERFORMANCE: Memoize event handler to prevent recreation on each render
+  const handleQuickAdd = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (product.sizes?.length > 0 || product.colors?.length > 0) {
+        return;
+      }
+
+      addToCart(product, 1);
+    },
+    [product, addToCart]
+  );
+
+  // PERFORMANCE: Memoize color style calculation
+  const getColorStyle = useCallback((color) => {
+    const colorMap = {
+      olive: '#808000',
+      green: '#008000',
+      navy: '#000080',
+    };
+    return colorMap[color] || color.toLowerCase();
+  }, []);
 
   return (
     <Link to={`/products/${product.id}`} className="group block">
@@ -69,23 +105,31 @@ const ProductCard = ({ product }) => {
             <img
               src={product.main_image}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              // PERFORMANCE: Add explicit dimensions to prevent layout shift
+              width="400"
+              height="400"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <span className="text-5xl">👕</span>
+              <span className="text-5xl" role="img" aria-label="clothing">
+                👕
+              </span>
             </div>
           )}
         </div>
 
-        {/* Variant-aware stock badges */}
+        {/* Variant-aware stock badges - PERFORMANCE: Conditional rendering optimized */}
         {stockInfo.isOutOfStock ? (
           <div className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
             Out of Stock
           </div>
         ) : hasVariants && stockInfo.outOfStockCount > 0 ? (
           <div className="absolute top-3 right-3 bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-            {stockInfo.outOfStockCount} variant{stockInfo.outOfStockCount > 1 ? 's' : ''} unavailable
+            {stockInfo.outOfStockCount} variant{stockInfo.outOfStockCount > 1 ? 's' : ''}{' '}
+            unavailable
           </div>
         ) : hasVariants && stockInfo.lowStockCount > 0 ? (
           <div className="absolute top-3 right-3 bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
@@ -100,7 +144,7 @@ const ProductCard = ({ product }) => {
         {/* Variant count badge */}
         {hasVariants && (
           <div className="absolute bottom-3 left-3 bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-            <FiPackage className="w-3.5 h-3.5" />
+            <FiPackage className="w-3.5 h-3.5" aria-hidden="true" />
             {stockInfo.variantCount} variant{stockInfo.variantCount > 1 ? 's' : ''}
           </div>
         )}
@@ -113,16 +157,17 @@ const ProductCard = ({ product }) => {
           {product.name}
         </h3>
 
-        {/* Rating */}
+        {/* Rating - PERFORMANCE: Optimized star rendering */}
         <div className="flex items-center gap-2 mb-2">
-          <div className="flex items-center">
+          <div className="flex items-center" role="img" aria-label={`Rating: ${averageRating} out of 5`}>
             {[...Array(5)].map((_, index) => (
               <FiStar
                 key={index}
                 className={`w-4 h-4 ${index < Math.floor(averageRating)
-                  ? 'fill-yellow-400 text-yellow-400'
-                  : 'text-gray-300'
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-gray-300'
                   }`}
+                aria-hidden="true"
               />
             ))}
           </div>
@@ -136,24 +181,25 @@ const ProductCard = ({ product }) => {
           <span className="text-xl md:text-2xl font-bold text-gray-900">
             ₹{product.display_price}
           </span>
-          {discountPercent > 0 && (
+          {priceInfo.discountPercent > 0 && (
             <>
               <span className="text-lg md:text-xl font-bold text-gray-500 line-through">
-                ₹{fakeOriginalPrice}
+                ₹{priceInfo.fakeOriginalPrice}
               </span>
               <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">
-                -{discountPercent}%
+                -{priceInfo.discountPercent}%
               </span>
             </>
           )}
         </div>
 
-        {/* Additional Info */}
+        {/* Additional Info - PERFORMANCE: Conditional rendering optimized */}
         {hasVariants ? (
           <div className="mt-2 space-y-1">
             {product.sizes?.length > 0 && (
               <p className="text-xs text-gray-700">
-                <span className="font-semibold">Sizes:</span> {product.sizes.slice(0, 3).join(', ')}
+                <span className="font-semibold">Sizes:</span>{' '}
+                {product.sizes.slice(0, 3).join(', ')}
                 {product.sizes.length > 3 && ` +${product.sizes.length - 3} more`}
               </p>
             )}
@@ -163,19 +209,13 @@ const ProductCard = ({ product }) => {
                 <div className="flex gap-1">
                   {product.colors.slice(0, 4).map((color, idx) => (
                     <div
-                      key={idx}
+                      key={`${color}-${idx}`}
                       className="w-4 h-4 rounded-full border-2 border-gray-400 shadow-sm"
                       style={{
-                        backgroundColor:
-                          color === 'olive'
-                            ? '#808000'
-                            : color === 'green'
-                              ? '#008000'
-                              : color === 'navy'
-                                ? '#000080'
-                                : color.toLowerCase(),
+                        backgroundColor: getColorStyle(color),
                       }}
                       title={color}
+                      aria-label={color}
                     />
                   ))}
                   {product.colors.length > 4 && (
@@ -200,6 +240,17 @@ const ProductCard = ({ product }) => {
       </div>
     </Link>
   );
-};
+}, (prevProps, nextProps) => {
+  // PERFORMANCE: Custom comparison function for React.memo
+  // Only re-render if product data actually changes
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.stock_quantity === nextProps.product.stock_quantity &&
+    prevProps.product.display_price === nextProps.product.display_price &&
+    prevProps.product.main_image === nextProps.product.main_image
+  );
+});
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;

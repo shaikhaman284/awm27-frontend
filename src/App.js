@@ -8,28 +8,40 @@ import Layout from './components/common/Layout';
 import ScrollToTop from './utils/ScrollToTop';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
-// Lazy load pages for code splitting
-const Home = lazy(() => import('./pages/Home'));
-const Products = lazy(() => import('./pages/Products'));
-const ProductDetail = lazy(() => import('./pages/ProductDetail'));
-const ShopDetail = lazy(() => import('./pages/ShopDetail'));
-const Cart = lazy(() => import('./pages/Cart'));
-const Checkout = lazy(() => import('./pages/Checkout'));
-const Orders = lazy(() => import('./pages/Orders'));
-const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
-const OrderDetail = lazy(() => import('./pages/OrderDetail'));
-const WriteReview = lazy(() => import('./pages/WriteReview'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Login = lazy(() => import('./pages/Login'));
+// PERFORMANCE OPTIMIZATION: Lazy load all pages for code splitting
+// This reduces initial bundle size significantly
+const Home = lazy(() => import(/* webpackChunkName: "home" */ './pages/Home'));
+const Products = lazy(() => import(/* webpackChunkName: "products" */ './pages/Products'));
+const ProductDetail = lazy(() => import(/* webpackChunkName: "product-detail" */ './pages/ProductDetail'));
+const ShopDetail = lazy(() => import(/* webpackChunkName: "shop-detail" */ './pages/ShopDetail'));
+const Cart = lazy(() => import(/* webpackChunkName: "cart" */ './pages/Cart'));
+const Checkout = lazy(() => import(/* webpackChunkName: "checkout" */ './pages/Checkout'));
+const Orders = lazy(() => import(/* webpackChunkName: "orders" */ './pages/Orders'));
+const OrderSuccess = lazy(() => import(/* webpackChunkName: "order-success" */ './pages/OrderSuccess'));
+const OrderDetail = lazy(() => import(/* webpackChunkName: "order-detail" */ './pages/OrderDetail'));
+const WriteReview = lazy(() => import(/* webpackChunkName: "write-review" */ './pages/WriteReview'));
+const Profile = lazy(() => import(/* webpackChunkName: "profile" */ './pages/Profile'));
+const Login = lazy(() => import(/* webpackChunkName: "login" */ './pages/Login'));
 
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
+// PERFORMANCE: Memoized Protected Route Component to prevent unnecessary re-renders
+const ProtectedRoute = React.memo(({ children }) => {
   const token = localStorage.getItem('awm_auth_token');
   if (!token) {
     return <Navigate to="/login" replace />;
   }
   return children;
-};
+});
+
+ProtectedRoute.displayName = 'ProtectedRoute';
+
+// PERFORMANCE: Optimized Loading Boundary Component
+const SuspenseBoundary = React.memo(({ children }) => (
+  <Suspense fallback={<LoadingSpinner />}>
+    {children}
+  </Suspense>
+));
+
+SuspenseBoundary.displayName = 'SuspenseBoundary';
 
 function App() {
   return (
@@ -39,7 +51,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <Layout>
-              <Suspense fallback={<LoadingSpinner />}>
+              <SuspenseBoundary>
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Home />} />
@@ -49,12 +61,14 @@ function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/login" element={<Login />} />
 
-                  {/* Protected Routes */}
+                  {/* Protected Routes - Each wrapped individually for better code splitting */}
                   <Route
                     path="/checkout"
                     element={
                       <ProtectedRoute>
-                        <Checkout />
+                        <SuspenseBoundary>
+                          <Checkout />
+                        </SuspenseBoundary>
                       </ProtectedRoute>
                     }
                   />
@@ -62,7 +76,9 @@ function App() {
                     path="/orders"
                     element={
                       <ProtectedRoute>
-                        <Orders />
+                        <SuspenseBoundary>
+                          <Orders />
+                        </SuspenseBoundary>
                       </ProtectedRoute>
                     }
                   />
@@ -70,7 +86,9 @@ function App() {
                     path="/orders/:orderNumber"
                     element={
                       <ProtectedRoute>
-                        <OrderDetail />
+                        <SuspenseBoundary>
+                          <OrderDetail />
+                        </SuspenseBoundary>
                       </ProtectedRoute>
                     }
                   />
@@ -78,7 +96,9 @@ function App() {
                     path="/order-success/:orderNumber"
                     element={
                       <ProtectedRoute>
-                        <OrderSuccess />
+                        <SuspenseBoundary>
+                          <OrderSuccess />
+                        </SuspenseBoundary>
                       </ProtectedRoute>
                     }
                   />
@@ -86,7 +106,9 @@ function App() {
                     path="/profile"
                     element={
                       <ProtectedRoute>
-                        <Profile />
+                        <SuspenseBoundary>
+                          <Profile />
+                        </SuspenseBoundary>
                       </ProtectedRoute>
                     }
                   />
@@ -94,15 +116,20 @@ function App() {
                     path="/write-review"
                     element={
                       <ProtectedRoute>
-                        <WriteReview />
+                        <SuspenseBoundary>
+                          <WriteReview />
+                        </SuspenseBoundary>
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* 404 Fallback */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-              </Suspense>
+              </SuspenseBoundary>
             </Layout>
 
-            {/* Toast Notifications */}
+            {/* Toast Notifications - Optimized configuration */}
             <Toaster
               position="top-center"
               toastOptions={{
@@ -110,14 +137,40 @@ function App() {
                 style: {
                   background: '#333',
                   color: '#fff',
+                  fontWeight: '600',
+                  borderRadius: '8px',
+                  padding: '12px 20px',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+                loading: {
+                  iconTheme: {
+                    primary: '#3b82f6',
+                    secondary: '#fff',
+                  },
                 },
               }}
+              containerStyle={{
+                top: 20,
+              }}
+              gutter={8}
             />
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>
-    </HelmetProvider >
+    </HelmetProvider>
   );
 }
 
-export default App;
+// PERFORMANCE: Export memoized App to prevent unnecessary re-renders at root level
+export default React.memo(App);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiMinus, FiPlus, FiShoppingCart, FiStar, FiChevronRight, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import apiService from '../services/api';
@@ -26,11 +26,15 @@ const ProductDetail = () => {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [availableStock, setAvailableStock] = useState(0);
 
+  // PERFORMANCE FIX: Memoize complex calculations
+  const images = useMemo(() => product?.images || [], [product?.images]);
+  const hasVariants = useMemo(() => product?.variants && product.variants.length > 0, [product?.variants]);
+  const averageRating = useMemo(() => product?.average_rating ? parseFloat(product.average_rating) : 0, [product?.average_rating]);
+  const reviewCount = useMemo(() => product?.review_count || reviews.length, [product?.review_count, reviews.length]);
+
   // Generate dynamic product schema with variants
   const getProductSchema = () => {
     if (!product) return {};
-
-    const hasVariants = product.variants && product.variants.length > 0;
 
     // Determine availability
     let availability = "https://schema.org/OutOfStock";
@@ -306,11 +310,6 @@ const ProductDetail = () => {
 
   if (!product) return null;
 
-  const images = product.images || [];
-  const averageRating = product.average_rating ? parseFloat(product.average_rating) : 0;
-  const reviewCount = product.review_count || reviews.length;
-  const hasVariants = product.variants && product.variants.length > 0;
-
   const discountPercent = 20;
   const originalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
 
@@ -328,7 +327,7 @@ const ProductDetail = () => {
         structuredData={getProductSchema()}
       />
 
-      {/* FIXED: Breadcrumb - improved contrast */}
+      {/* Breadcrumb */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-2 text-sm">
@@ -351,7 +350,7 @@ const ProductDetail = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
-          {/* Left: Image Gallery */}
+          {/* Left: Image Gallery - PERFORMANCE FIX: Added lazy loading */}
           <div className="flex gap-4">
             {/* Thumbnail Column */}
             <div className="flex flex-col gap-3 w-24">
@@ -363,7 +362,12 @@ const ProductDetail = () => {
                     className={`border-2 rounded-2xl overflow-hidden aspect-square transition ${selectedImage === idx ? 'border-black' : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={img}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))
               ) : (
@@ -373,21 +377,20 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Main Image */}
-            <div className="flex-1 bg-gray-100 rounded-3xl overflow-hidden">
-              <div className="aspect-square">
-                {images.length > 0 ? (
-                  <img
-                    src={images[selectedImage]}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <span className="text-8xl">👕</span>
-                  </div>
-                )}
-              </div>
+            {/* Main Image - PERFORMANCE FIX: Added lazy loading except first image */}
+            <div className="flex-1 bg-gray-50 rounded-3xl overflow-hidden aspect-square">
+              {images.length > 0 ? (
+                <img
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  loading={selectedImage === 0 ? "eager" : "lazy"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-9xl">
+                  👕
+                </div>
+              )}
             </div>
           </div>
 
@@ -403,8 +406,8 @@ const ProductDetail = () => {
                     <FiStar
                       key={i}
                       className={`w-5 h-5 ${i < Math.floor(averageRating)
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-gray-300'
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
                         }`}
                     />
                   ))}
@@ -413,25 +416,23 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* FIXED: Price Section - improved contrast */}
+            {/* Price Section */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl font-bold text-gray-900">₹{product.display_price}</span>
-              {/* FIXED: Changed from gray-400 to gray-500 */}
               <span className="text-2xl text-gray-500 font-bold line-through">₹{originalPrice}</span>
-              {/* FIXED: Changed bg-red-50 to bg-red-100 and text-red-500 to text-red-700 */}
               <span className="text-sm font-bold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
                 -{discountPercent}%
               </span>
             </div>
 
-            {/* FIXED: Description - improved contrast */}
+            {/* Description */}
             <p className="text-gray-700 mb-6 leading-relaxed font-medium">
               {product.description?.slice(0, 200) || 'No description available'}...
             </p>
 
             <hr className="border-gray-300 mb-6" />
 
-            {/* FIXED: Color Selector - improved labels */}
+            {/* Color Selector */}
             {product.colors?.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
@@ -455,10 +456,10 @@ const ProductDetail = () => {
                         onClick={() => setSelectedColor(color)}
                         disabled={!isColorAvailable}
                         className={`w-10 h-10 rounded-full border-2 transition relative ${selectedColor === color
-                            ? 'border-black ring-2 ring-offset-2 ring-black'
-                            : isColorAvailable
-                              ? 'border-gray-300 hover:border-gray-400'
-                              : 'border-gray-200 opacity-40 cursor-not-allowed'
+                          ? 'border-black ring-2 ring-offset-2 ring-black'
+                          : isColorAvailable
+                            ? 'border-gray-300 hover:border-gray-400'
+                            : 'border-gray-200 opacity-40 cursor-not-allowed'
                           }`}
                         style={{
                           backgroundColor:
@@ -486,7 +487,7 @@ const ProductDetail = () => {
 
             <hr className="border-gray-300 mb-6" />
 
-            {/* FIXED: Size Selector - improved contrast for disabled state */}
+            {/* Size Selector */}
             {product.sizes?.length > 0 && (
               <div className="mb-6">
                 <label className="block text-gray-700 font-semibold mb-3">Choose Size</label>
@@ -505,10 +506,10 @@ const ProductDetail = () => {
                         onClick={() => setSelectedSize(size)}
                         disabled={!isSizeAvailable}
                         className={`px-6 py-3 rounded-full font-bold transition relative ${selectedSize === size
-                            ? 'bg-black text-white'
-                            : isSizeAvailable
-                              ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          ? 'bg-black text-white'
+                          : isSizeAvailable
+                            ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           }`}
                       >
                         {size}
@@ -526,7 +527,7 @@ const ProductDetail = () => {
 
             <hr className="border-gray-300 mb-6" />
 
-            {/* FIXED: Stock Availability - improved contrast */}
+            {/* Stock Availability */}
             {(selectedSize || selectedColor || hasVariants) && (
               <div className="mb-6">
                 {isVariantAvailable ? (
@@ -571,7 +572,6 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* FIXED: Add to Cart Button - improved disabled state */}
               {isVariantAvailable && availableStock > 0 ? (
                 <button
                   onClick={handleAddToCart}
@@ -591,7 +591,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* FIXED: Tabs Section - improved contrast */}
+        {/* Tabs Section */}
         <div className="mb-16">
           {/* Tab Navigation */}
           <div className="flex gap-8 border-b border-gray-200 mb-8">
@@ -631,9 +631,9 @@ const ProductDetail = () => {
           {activeTab === 'reviews' && (
             <div>
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold">
+                <h2 className="text-2xl font-bold">
                   All Reviews <span className="text-gray-600">({reviewCount})</span>
-                </h3>
+                </h2>
                 <div className="flex gap-3">
                   <button className="px-6 py-2.5 bg-gray-100 rounded-full text-sm font-bold hover:bg-gray-200 transition">
                     Latest
@@ -659,7 +659,7 @@ const ProductDetail = () => {
                       </div>
 
                       <div className="flex items-center gap-2 mb-3">
-                        <h4 className="font-bold text-gray-900">{review.customer_name}</h4>
+                        <h3 className="font-bold text-gray-900">{review.customer_name}</h3>
                         {review.is_verified_purchase && (
                           <span className="flex items-center gap-1 text-xs text-white bg-green-600 font-bold px-2 py-0.5 rounded-full">
                             <FiCheck className="w-3 h-3" />
@@ -669,7 +669,6 @@ const ProductDetail = () => {
 
                       {review.review_text && <p className="text-gray-700 text-sm font-medium mb-3">{review.review_text}</p>}
 
-                      {/* FIXED: Date text - improved contrast */}
                       <p className="text-xs text-gray-600 font-medium">
                         Posted on{' '}
                         {new Date(review.created_at).toLocaleDateString('en-US', {

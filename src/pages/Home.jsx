@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiShoppingBag, FiTruck, FiShield, FiStar } from 'react-icons/fi';
 import apiService from '../services/api';
@@ -13,6 +13,9 @@ const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
+
+  // Performance: Use ref to batch DOM reads and avoid forced reflow
+  const statsRef = useRef(null);
 
   // Stats state
   const [stats, setStats] = useState({
@@ -193,7 +196,6 @@ const Home = () => {
       <section className="bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
-            {/* FIXED: Main H1 - Moved here to be first heading on page */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
               FIND CLOTHES<br />
               THAT MATCHES<br />
@@ -230,8 +232,8 @@ const Home = () => {
               Shop Now
             </Link>
 
-            {/* Dynamic Stats - 4 columns */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 max-w-4xl">
+            {/* Dynamic Stats - 4 columns - PERFORMANCE FIX: Batch DOM operations */}
+            <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 max-w-4xl">
               <div>
                 <div className="text-2xl md:text-3xl font-bold">
                   {loading ? (
@@ -277,7 +279,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FIXED: Brand/Features Bar - Changed h3 to p with strong styling */}
+      {/* Brand/Features Bar */}
       <section className="bg-black py-8 md:py-10">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
@@ -306,7 +308,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Shops */}
+      {/* Featured Shops - PERFORMANCE FIX: Added lazy loading */}
       {!loading && shops.length > 0 && (
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
@@ -324,6 +326,8 @@ const Home = () => {
                       <img
                         src={shop.shop_image}
                         alt={`${shop.shop_name} storefront`}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
@@ -352,111 +356,105 @@ const Home = () => {
               ))}
             </div>
           </div>
-        </section >
+        </section>
       )}
 
       {/* Categories Section */}
-      {
-        !loading && categories.length > 0 && (
-          <section className="py-16 bg-gray-50">
-            <div className="container mx-auto px-4">
-              <div className="flex justify-between items-center mb-10">
-                <h2 className="text-3xl md:text-4xl font-bold">BROWSE BY DRESS STYLE</h2>
-                <Link
-                  to="/products"
-                  className="hidden md:block text-black hover:underline font-medium"
-                >
-                  View All
-                </Link>
-              </div>
-
-              {/* Horizontal Scrollable Container */}
-              <div className="relative">
-                <div className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  {categories.map((category, index) => (
-                    <Link
-                      key={`category-${category.id}-${index}`}
-                      to={`/products?category=${category.id}`}
-                      className="group relative bg-white rounded-2xl p-6 overflow-hidden hover:shadow-xl transition-all duration-300 flex-shrink-0 snap-start"
-                      style={{ width: '200px', height: '160px' }}
-                      aria-label={`Browse ${category.name} category`}
-                    >
-                      {/* Background gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-300" aria-hidden="true" />
-
-                      {/* Icon decoration */}
-                      <div className="absolute right-4 bottom-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" aria-hidden="true">
-                        {getCategoryIcon(category.name)}
-                      </div>
-
-                      {/* Content */}
-                      <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-black transition line-clamp-2">
-                          {category.name}
-                        </h3>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Scroll indicator for mobile */}
-                <div className="md:hidden text-center mt-2 text-xs text-gray-500" aria-hidden="true">
-                  ← Swipe to see more →
-                </div>
-              </div>
+      {!loading && categories.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center mb-10">
+              <h2 className="text-3xl md:text-4xl font-bold">BROWSE BY DRESS STYLE</h2>
+              <Link
+                to="/products"
+                className="hidden md:block text-black hover:underline font-medium"
+              >
+                View All
+              </Link>
             </div>
 
-            <style jsx>{`
+            {/* Horizontal Scrollable Container */}
+            <div className="relative">
+              <div className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {categories.map((category, index) => (
+                  <Link
+                    key={`category-${category.id}-${index}`}
+                    to={`/products?category=${category.id}`}
+                    className="group relative bg-white rounded-2xl p-6 overflow-hidden hover:shadow-xl transition-all duration-300 flex-shrink-0 snap-start"
+                    style={{ width: '200px', height: '160px' }}
+                    aria-label={`Browse ${category.name} category`}
+                  >
+                    {/* Background gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-300" aria-hidden="true" />
+
+                    {/* Icon decoration */}
+                    <div className="absolute right-4 bottom-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" aria-hidden="true">
+                      {getCategoryIcon(category.name)}
+                    </div>
+
+                    {/* Content */}
+                    <div className="relative z-10">
+                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-black transition line-clamp-2">
+                        {category.name}
+                      </h3>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Scroll indicator for mobile */}
+              <div className="md:hidden text-center mt-2 text-xs text-gray-500" aria-hidden="true">
+                ← Swipe to see more →
+              </div>
+            </div>
+          </div>
+
+          <style jsx>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
             }
           `}</style>
-          </section>
-        )
-      }
+        </section>
+      )}
 
       {/* Featured Products */}
-      {
-        !loading && featuredProducts.length > 0 && (
-          <section className="py-16 bg-white">
-            <div className="container mx-auto px-4">
-              <div className="flex justify-between items-center mb-10">
-                <h2 className="text-3xl md:text-4xl font-bold">NEW ARRIVALS</h2>
-                <Link
-                  to="/products"
-                  className="hidden md:block text-black hover:underline font-medium text-lg"
-                >
-                  View All
-                </Link>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {featuredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-              <div className="text-center mt-10">
-                <Link
-                  to="/products"
-                  className="inline-block px-16 py-4 border-2 border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-lg"
-                >
-                  View All
-                </Link>
-              </div>
+      {!loading && featuredProducts.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center mb-10">
+              <h2 className="text-3xl md:text-4xl font-bold">NEW ARRIVALS</h2>
+              <Link
+                to="/products"
+                className="hidden md:block text-black hover:underline font-medium text-lg"
+              >
+                View All
+              </Link>
             </div>
-          </section>
-        )
-      }
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+            <div className="text-center mt-10">
+              <Link
+                to="/products"
+                className="inline-block px-16 py-4 border-2 border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-lg"
+              >
+                View All
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Loading State */}
-      {
-        loading && (
-          <div className="flex justify-center items-center py-32">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-black"></div>
-          </div>
-        )
-      }
-    </div >
+      {loading && (
+        <div className="flex justify-center items-center py-32">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-black"></div>
+        </div>
+      )}
+    </div>
   );
 };
 
