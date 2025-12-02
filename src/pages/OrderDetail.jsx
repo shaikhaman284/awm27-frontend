@@ -75,10 +75,10 @@ const OrderDetail = () => {
     });
   };
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = async () => {
     try {
       setDownloadingInvoice(true);
-      generateInvoice(order);
+      await generateInvoice(order);
       toast.success('Invoice downloaded successfully!');
     } catch (error) {
       console.error('Error generating invoice:', error);
