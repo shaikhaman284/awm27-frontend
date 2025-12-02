@@ -1,4 +1,6 @@
 {
+    "buildCommand": "npm run build",
+    "outputDirectory": "build",
     "headers": [
         {
             "source": "/static/(.*)",
@@ -228,6 +230,5 @@
         }
     ],
     "trailingSlash": false,
-    "cleanUrls": true,
-    "framework": "vite"
+    "cleanUrls": true
 }
