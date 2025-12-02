@@ -31,7 +31,7 @@ const ProductCard = ({ product }) => {
   const discountPercent = 20;
   const fakeOriginalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
 
-  // NEW: Get variant stock info
+  // Get variant stock info
   const getVariantStockInfo = () => {
     if (!hasVariants) {
       return {
@@ -78,29 +78,29 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* NEW: Variant-aware stock badges */}
+        {/* Variant-aware stock badges */}
         {stockInfo.isOutOfStock ? (
-          <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+          <div className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
             Out of Stock
           </div>
         ) : hasVariants && stockInfo.outOfStockCount > 0 ? (
-          <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+          <div className="absolute top-3 right-3 bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
             {stockInfo.outOfStockCount} variant{stockInfo.outOfStockCount > 1 ? 's' : ''} unavailable
           </div>
         ) : hasVariants && stockInfo.lowStockCount > 0 ? (
-          <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+          <div className="absolute top-3 right-3 bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
             {stockInfo.lowStockCount} variant{stockInfo.lowStockCount > 1 ? 's' : ''} low
           </div>
         ) : stockInfo.hasLowStock ? (
-          <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+          <div className="absolute top-3 right-3 bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
             Low Stock
           </div>
         ) : null}
 
-        {/* NEW: Variant count badge - bottom left */}
+        {/* Variant count badge */}
         {hasVariants && (
-          <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
-            <FiPackage className="w-3 h-3" />
+          <div className="absolute bottom-3 left-3 bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+            <FiPackage className="w-3.5 h-3.5" />
             {stockInfo.variantCount} variant{stockInfo.variantCount > 1 ? 's' : ''}
           </div>
         )}
@@ -109,7 +109,7 @@ const ProductCard = ({ product }) => {
       {/* Content */}
       <div>
         {/* Product Name */}
-        <h3 className="font-bold text-base md:text-lg text-gray-900 mb-2 line-clamp-1 group-hover:text-gray-600 transition">
+        <h3 className="font-bold text-base md:text-lg text-gray-900 mb-2 line-clamp-1 group-hover:text-gray-700 transition">
           {product.name}
         </h3>
 
@@ -126,7 +126,7 @@ const ProductCard = ({ product }) => {
               />
             ))}
           </div>
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm font-semibold text-gray-900">
             {averageRating.toFixed(1)}/5
           </span>
         </div>
@@ -136,36 +136,35 @@ const ProductCard = ({ product }) => {
           <span className="text-xl md:text-2xl font-bold text-gray-900">
             ₹{product.display_price}
           </span>
-
           {discountPercent > 0 && (
             <>
-              <span className="text-lg md:text-xl font-bold text-gray-400 line-through">
+              <span className="text-lg md:text-xl font-bold text-gray-500 line-through">
                 ₹{fakeOriginalPrice}
               </span>
-              <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full">
+              <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">
                 -{discountPercent}%
               </span>
             </>
           )}
         </div>
 
-        {/* NEW: Enhanced Additional Info */}
+        {/* Additional Info */}
         {hasVariants ? (
           <div className="mt-2 space-y-1">
             {product.sizes?.length > 0 && (
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Sizes:</span> {product.sizes.slice(0, 3).join(', ')}
+              <p className="text-xs text-gray-700">
+                <span className="font-semibold">Sizes:</span> {product.sizes.slice(0, 3).join(', ')}
                 {product.sizes.length > 3 && ` +${product.sizes.length - 3} more`}
               </p>
             )}
             {product.colors?.length > 0 && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-600 font-medium">Colors:</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-700 font-semibold">Colors:</span>
                 <div className="flex gap-1">
                   {product.colors.slice(0, 4).map((color, idx) => (
                     <div
                       key={idx}
-                      className="w-4 h-4 rounded-full border border-gray-300"
+                      className="w-4 h-4 rounded-full border-2 border-gray-400 shadow-sm"
                       style={{
                         backgroundColor:
                           color === 'olive'
@@ -180,19 +179,23 @@ const ProductCard = ({ product }) => {
                     />
                   ))}
                   {product.colors.length > 4 && (
-                    <span className="text-xs text-gray-500">+{product.colors.length - 4}</span>
+                    <span className="text-xs text-gray-700 font-medium">
+                      +{product.colors.length - 4}
+                    </span>
                   )}
                 </div>
               </div>
             )}
             {!stockInfo.isOutOfStock && (
-              <p className="text-xs text-green-600 font-medium">
+              <p className="text-xs text-green-700 font-semibold">
                 {stockInfo.totalStock} total in stock
               </p>
             )}
           </div>
         ) : hasSizeColorOptions ? (
-          <p className="text-xs text-gray-500 mt-2">Multiple options available</p>
+          <p className="text-xs text-gray-700 font-medium mt-2">
+            Multiple options available
+          </p>
         ) : null}
       </div>
     </Link>

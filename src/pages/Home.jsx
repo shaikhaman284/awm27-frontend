@@ -69,8 +69,8 @@ const Home = () => {
         setStats({
           totalShops: shopsRes.data.length || 0,
           totalProducts: productsRes.data.count || 0,
-          totalOrders: Math.floor((productsRes.data.count || 0) * 0.3), // Estimate 30% conversion
-          totalVisitors: Math.floor((productsRes.data.count || 0) * 10) // Estimate 10 visitors per product
+          totalOrders: Math.floor((productsRes.data.count || 0) * 0.3),
+          totalVisitors: Math.floor((productsRes.data.count || 0) * 10)
         });
       }
 
@@ -120,7 +120,7 @@ const Home = () => {
     return '👕';
   };
 
-  // Format large numbers (e.g., 1000 -> 1,000) with null safety
+  // Format large numbers with null safety
   const formatNumber = (num) => {
     return (num || 0).toLocaleString();
   };
@@ -166,7 +166,6 @@ const Home = () => {
         }}
       />
 
-
       {/* Welcome Popup */}
       {showWelcome && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -194,6 +193,7 @@ const Home = () => {
       <section className="bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
+            {/* FIXED: Main H1 - Moved here to be first heading on page */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
               FIND CLOTHES<br />
               THAT MATCHES<br />
@@ -206,12 +206,13 @@ const Home = () => {
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="flex gap-3 max-w-xl mb-10">
               <div className="flex-1 relative">
-                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" aria-hidden="true" />
                 <input
                   type="text"
                   name="search"
                   placeholder="Search for shirts, jeans, sarees..."
                   className="w-full pl-12 pr-4 py-4 rounded-full border-2 border-gray-200 text-gray-800 focus:outline-none focus:border-black transition"
+                  aria-label="Search for products"
                 />
               </div>
               <button
@@ -276,28 +277,28 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Brand/Features Bar */}
+      {/* FIXED: Brand/Features Bar - Changed h3 to p with strong styling */}
       <section className="bg-black py-8 md:py-10">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="flex items-center justify-center gap-3">
-              <FiShoppingBag className="w-8 h-8 text-white" />
+              <FiShoppingBag className="w-8 h-8 text-white" aria-hidden="true" />
               <div className="text-left">
-                <h3 className="text-white font-bold text-lg">Local Stores</h3>
+                <p className="text-white font-bold text-lg">Local Stores</p>
                 <p className="text-gray-400 text-sm">Trusted Amravati Shops</p>
               </div>
             </div>
             <div className="flex items-center justify-center gap-3">
-              <FiTruck className="w-8 h-8 text-white" />
+              <FiTruck className="w-8 h-8 text-white" aria-hidden="true" />
               <div className="text-left">
-                <h3 className="text-white font-bold text-lg">Fast Delivery</h3>
+                <p className="text-white font-bold text-lg">Fast Delivery</p>
                 <p className="text-gray-400 text-sm">To Your Doorstep</p>
               </div>
             </div>
             <div className="flex items-center justify-center gap-3">
-              <FiShield className="w-8 h-8 text-white" />
+              <FiShield className="w-8 h-8 text-white" aria-hidden="true" />
               <div className="text-left">
-                <h3 className="text-white font-bold text-lg">COD Available</h3>
+                <p className="text-white font-bold text-lg">COD Available</p>
                 <p className="text-gray-400 text-sm">Free on Orders ≥ ₹500</p>
               </div>
             </div>
@@ -316,19 +317,20 @@ const Home = () => {
                   key={shop.id}
                   to={`/shop/${shop.id}`}
                   className="group bg-white rounded-3xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
+                  aria-label={`View ${shop.shop_name} shop`}
                 >
                   {shop.shop_image ? (
                     <div className="relative w-full h-48 overflow-hidden">
                       <img
                         src={shop.shop_image}
-                        alt={shop.shop_name}
+                        alt={`${shop.shop_name} storefront`}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                     </div>
                   ) : (
                     <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <FiShoppingBag className="w-16 h-16 text-gray-400" />
+                      <FiShoppingBag className="w-16 h-16 text-gray-400" aria-hidden="true" />
                     </div>
                   )}
                   <div className="p-5">
@@ -341,7 +343,7 @@ const Home = () => {
                         {shop.product_count} Products
                       </p>
                       <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
-                        <FiStar className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                        <FiStar className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" aria-hidden="true" />
                         <span className="text-xs font-semibold">4.5</span>
                       </div>
                     </div>
@@ -353,7 +355,7 @@ const Home = () => {
         </section>
       )}
 
-      {/* Categories Section - Horizontal Scroll */}
+      {/* Categories Section */}
       {!loading && categories.length > 0 && (
         <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
@@ -377,12 +379,13 @@ const Home = () => {
                     to={`/products?category=${category.id}`}
                     className="group relative bg-white rounded-2xl p-6 overflow-hidden hover:shadow-xl transition-all duration-300 flex-shrink-0 snap-start"
                     style={{ width: '200px', height: '160px' }}
+                    aria-label={`Browse ${category.name} category`}
                   >
                     {/* Background gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-300" aria-hidden="true" />
 
                     {/* Icon decoration */}
-                    <div className="absolute right-4 bottom-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className="absolute right-4 bottom-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" aria-hidden="true">
                       {getCategoryIcon(category.name)}
                     </div>
 
@@ -397,7 +400,7 @@ const Home = () => {
               </div>
 
               {/* Scroll indicator for mobile */}
-              <div className="md:hidden text-center mt-2 text-xs text-gray-500">
+              <div className="md:hidden text-center mt-2 text-xs text-gray-500" aria-hidden="true">
                 ← Swipe to see more →
               </div>
             </div>

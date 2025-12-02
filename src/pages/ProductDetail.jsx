@@ -22,7 +22,7 @@ const ProductDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [activeTab, setActiveTab] = useState('reviews');
 
-  // NEW: Variant state
+  // Variant state
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [availableStock, setAvailableStock] = useState(0);
 
@@ -35,7 +35,6 @@ const ProductDetail = () => {
     // Determine availability
     let availability = "https://schema.org/OutOfStock";
     if (hasVariants) {
-      // If any variant has stock, product is available
       const hasStock = product.variants.some(v => v.stock_quantity > 0);
       availability = hasStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
     } else {
@@ -142,7 +141,7 @@ const ProductDetail = () => {
       }));
     }
 
-    // Add variant information if product has sizes or colors
+    // Add variant information
     if (product.sizes && product.sizes.length > 0) {
       baseSchema.size = product.sizes;
     }
@@ -184,14 +183,12 @@ const ProductDetail = () => {
     return baseSchema;
   };
 
-
   useEffect(() => {
     loadProductDetail();
     loadReviews();
     loadRelatedProducts();
   }, [id]);
 
-  // NEW: Update available stock when size/color changes
   useEffect(() => {
     if (product) {
       updateAvailableStock();
@@ -204,7 +201,6 @@ const ProductDetail = () => {
       const response = await apiService.getProductDetail(id);
       setProduct(response.data);
 
-      // Set default selections
       if (response.data.sizes?.length > 0) {
         setSelectedSize(response.data.sizes[0]);
       }
@@ -212,7 +208,6 @@ const ProductDetail = () => {
         setSelectedColor(response.data.colors[0]);
       }
 
-      // Set initial stock
       setAvailableStock(response.data.stock_quantity);
     } catch (error) {
       toast.error('Failed to load product');
@@ -240,11 +235,9 @@ const ProductDetail = () => {
     }
   };
 
-  // NEW: Update available stock based on selected variant
   const updateAvailableStock = () => {
     if (!product) return;
 
-    // If product has variants, find matching variant
     if (product.variants && product.variants.length > 0) {
       const variant = product.variants.find(
         v => v.size === selectedSize && v.color === selectedColor
@@ -258,26 +251,22 @@ const ProductDetail = () => {
         setAvailableStock(0);
       }
     } else {
-      // No variants - use total stock
       setSelectedVariant(null);
       setAvailableStock(product.stock_quantity);
     }
   };
 
   const handleAddToCart = () => {
-    // Validate size selection
     if (product.sizes?.length > 0 && !selectedSize) {
       toast.error('Please select a size');
       return;
     }
 
-    // Validate color selection
     if (product.colors?.length > 0 && !selectedColor) {
       toast.error('Please select a color');
       return;
     }
 
-    // Check if variant exists and has stock
     if (product.variants && product.variants.length > 0) {
       if (!selectedVariant) {
         toast.error('This variant is not available');
@@ -292,14 +281,12 @@ const ProductDetail = () => {
         return;
       }
     } else {
-      // No variants - check total stock
       if (quantity > product.stock_quantity) {
         toast.error(`Only ${product.stock_quantity} items available`);
         return;
       }
     }
 
-    // Add to cart with variant info
     addToCart(
       product,
       quantity,
@@ -324,11 +311,9 @@ const ProductDetail = () => {
   const reviewCount = product.review_count || reviews.length;
   const hasVariants = product.variants && product.variants.length > 0;
 
-  // Calculate discount percentage
   const discountPercent = 20;
   const originalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
 
-  // Check if current selection is available
   const isVariantAvailable = hasVariants ? selectedVariant !== null : availableStock > 0;
 
   return (
@@ -342,23 +327,24 @@ const ProductDetail = () => {
         type="product"
         structuredData={getProductSchema()}
       />
-      {/* Breadcrumb */}
+
+      {/* FIXED: Breadcrumb - improved contrast */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-black transition">
+            <button onClick={() => navigate('/')} className="text-gray-600 hover:text-black font-medium transition">
               Home
             </button>
-            <FiChevronRight className="w-4 h-4 text-gray-400" />
-            <button onClick={() => navigate('/products')} className="text-gray-500 hover:text-black transition">
+            <FiChevronRight className="w-4 h-4 text-gray-500" />
+            <button onClick={() => navigate('/products')} className="text-gray-600 hover:text-black font-medium transition">
               Shop
             </button>
-            <FiChevronRight className="w-4 h-4 text-gray-400" />
-            <button onClick={() => navigate(`/shop/${product.shop_id}`)} className="text-gray-500 hover:text-black transition">
+            <FiChevronRight className="w-4 h-4 text-gray-500" />
+            <button onClick={() => navigate(`/shop/${product.shop_id}`)} className="text-gray-600 hover:text-black font-medium transition">
               {product.category_name || 'Category'}
             </button>
-            <FiChevronRight className="w-4 h-4 text-gray-400" />
-            <span className="text-black font-medium line-clamp-1">{product.name}</span>
+            <FiChevronRight className="w-4 h-4 text-gray-500" />
+            <span className="text-black font-semibold line-clamp-1">{product.name}</span>
           </div>
         </div>
       </div>
@@ -417,44 +403,45 @@ const ProductDetail = () => {
                     <FiStar
                       key={i}
                       className={`w-5 h-5 ${i < Math.floor(averageRating)
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300'
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
                         }`}
                     />
                   ))}
                 </div>
-                <span className="font-semibold">{averageRating.toFixed(1)}/5</span>
+                <span className="font-bold text-gray-900">{averageRating.toFixed(1)}/5</span>
               </div>
             )}
 
-            {/* Price */}
+            {/* FIXED: Price Section - improved contrast */}
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold">₹{product.display_price}</span>
-              <span className="text-2xl text-gray-400 line-through">₹{originalPrice}</span>
-              <span className="text-sm font-semibold text-red-500 bg-red-50 px-2.5 py-1 rounded-full">
+              <span className="text-3xl font-bold text-gray-900">₹{product.display_price}</span>
+              {/* FIXED: Changed from gray-400 to gray-500 */}
+              <span className="text-2xl text-gray-500 font-bold line-through">₹{originalPrice}</span>
+              {/* FIXED: Changed bg-red-50 to bg-red-100 and text-red-500 to text-red-700 */}
+              <span className="text-sm font-bold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
                 -{discountPercent}%
               </span>
             </div>
 
-            {/* Description */}
-            <p className="text-gray-600 mb-6 leading-relaxed">
+            {/* FIXED: Description - improved contrast */}
+            <p className="text-gray-700 mb-6 leading-relaxed font-medium">
               {product.description?.slice(0, 200) || 'No description available'}...
             </p>
 
             <hr className="border-gray-300 mb-6" />
 
-            {/* Color Selector */}
+            {/* FIXED: Color Selector - improved labels */}
             {product.colors?.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-gray-600">
+                  <label className="block text-gray-700 font-semibold">
                     Select Colors
-                    {selectedColor && <span className="font-semibold text-black ml-2">({selectedColor})</span>}
+                    {selectedColor && <span className="font-bold text-black ml-2">({selectedColor})</span>}
                   </label>
                 </div>
                 <div className="flex gap-3">
                   {product.colors.map((color) => {
-                    // NEW: Check if this color is available with current size
                     let isColorAvailable = true;
                     if (hasVariants && selectedSize) {
                       isColorAvailable = product.variants.some(
@@ -468,10 +455,10 @@ const ProductDetail = () => {
                         onClick={() => setSelectedColor(color)}
                         disabled={!isColorAvailable}
                         className={`w-10 h-10 rounded-full border-2 transition relative ${selectedColor === color
-                          ? 'border-black ring-2 ring-offset-2 ring-black'
-                          : isColorAvailable
-                            ? 'border-gray-300 hover:border-gray-400'
-                            : 'border-gray-200 opacity-40 cursor-not-allowed'
+                            ? 'border-black ring-2 ring-offset-2 ring-black'
+                            : isColorAvailable
+                              ? 'border-gray-300 hover:border-gray-400'
+                              : 'border-gray-200 opacity-40 cursor-not-allowed'
                           }`}
                         style={{
                           backgroundColor:
@@ -499,13 +486,12 @@ const ProductDetail = () => {
 
             <hr className="border-gray-300 mb-6" />
 
-            {/* Size Selector */}
+            {/* FIXED: Size Selector - improved contrast for disabled state */}
             {product.sizes?.length > 0 && (
               <div className="mb-6">
-                <label className="block text-gray-600 mb-3">Choose Size</label>
+                <label className="block text-gray-700 font-semibold mb-3">Choose Size</label>
                 <div className="flex flex-wrap gap-3">
                   {product.sizes.map((size) => {
-                    // NEW: Check if this size is available with current color
                     let isSizeAvailable = true;
                     if (hasVariants && selectedColor) {
                       isSizeAvailable = product.variants.some(
@@ -518,17 +504,17 @@ const ProductDetail = () => {
                         key={size}
                         onClick={() => setSelectedSize(size)}
                         disabled={!isSizeAvailable}
-                        className={`px-6 py-3 rounded-full font-medium transition relative ${selectedSize === size
-                          ? 'bg-black text-white'
-                          : isSizeAvailable
-                            ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        className={`px-6 py-3 rounded-full font-bold transition relative ${selectedSize === size
+                            ? 'bg-black text-white'
+                            : isSizeAvailable
+                              ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           }`}
                       >
                         {size}
                         {!isSizeAvailable && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-full h-0.5 bg-gray-400"></div>
+                            <div className="w-full h-0.5 bg-gray-500"></div>
                           </div>
                         )}
                       </button>
@@ -540,22 +526,22 @@ const ProductDetail = () => {
 
             <hr className="border-gray-300 mb-6" />
 
-            {/* NEW: Stock Availability Indicator */}
+            {/* FIXED: Stock Availability - improved contrast */}
             {(selectedSize || selectedColor || hasVariants) && (
               <div className="mb-6">
                 {isVariantAvailable ? (
-                  <div className="flex items-center gap-2 text-green-600">
+                  <div className="flex items-center gap-2 text-green-700">
                     <FiCheck className="w-5 h-5" />
-                    <span className="font-medium">
+                    <span className="font-bold">
                       {availableStock > 10
                         ? 'In Stock'
                         : `Only ${availableStock} left in stock`}
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-red-600">
+                  <div className="flex items-center gap-2 text-red-700">
                     <FiAlertCircle className="w-5 h-5" />
-                    <span className="font-medium">
+                    <span className="font-bold">
                       {hasVariants
                         ? 'This combination is out of stock'
                         : 'Out of Stock'}
@@ -567,7 +553,6 @@ const ProductDetail = () => {
 
             {/* Quantity & Add to Cart */}
             <div className="flex gap-4 mb-6">
-              {/* Quantity */}
               {isVariantAvailable && availableStock > 0 && (
                 <div className="flex items-center bg-gray-100 rounded-full px-5 py-3">
                   <button
@@ -576,7 +561,7 @@ const ProductDetail = () => {
                   >
                     <FiMinus className="w-4 h-4" />
                   </button>
-                  <span className="text-lg font-semibold w-12 text-center">{quantity}</span>
+                  <span className="text-lg font-bold w-12 text-center">{quantity}</span>
                   <button
                     onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
                     className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded-full transition"
@@ -586,42 +571,33 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Add to Cart Button */}
+              {/* FIXED: Add to Cart Button - improved disabled state */}
               {isVariantAvailable && availableStock > 0 ? (
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition py-4"
+                  className="flex-1 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition py-4"
                 >
                   Add to Cart
                 </button>
               ) : (
                 <button
                   disabled
-                  className="flex-1 bg-gray-300 text-gray-500 font-semibold rounded-full cursor-not-allowed py-4"
+                  className="flex-1 bg-gray-400 text-white font-bold rounded-full cursor-not-allowed py-4"
                 >
                   {hasVariants ? 'Variant Out of Stock' : 'Out of Stock'}
                 </button>
               )}
             </div>
-
-            {/* NEW: Variant Info (if product has variants) */}
-            {/* {hasVariants && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> This product has multiple variants. Stock availability varies by size and color combination.
-                </p>
-              </div>
-            )} */}
           </div>
         </div>
 
-        {/* Tabs Section */}
+        {/* FIXED: Tabs Section - improved contrast */}
         <div className="mb-16">
           {/* Tab Navigation */}
           <div className="flex gap-8 border-b border-gray-200 mb-8">
             <button
               onClick={() => setActiveTab('details')}
-              className={`pb-4 px-2 font-medium transition relative ${activeTab === 'details' ? 'text-black' : 'text-gray-400'
+              className={`pb-4 px-2 font-bold transition relative ${activeTab === 'details' ? 'text-black' : 'text-gray-600'
                 }`}
             >
               Product Details
@@ -629,7 +605,7 @@ const ProductDetail = () => {
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`pb-4 px-2 font-medium transition relative ${activeTab === 'reviews' ? 'text-black' : 'text-gray-400'
+              className={`pb-4 px-2 font-bold transition relative ${activeTab === 'reviews' ? 'text-black' : 'text-gray-600'
                 }`}
             >
               Rating & Reviews
@@ -637,7 +613,7 @@ const ProductDetail = () => {
             </button>
             <button
               onClick={() => setActiveTab('faqs')}
-              className={`pb-4 px-2 font-medium transition relative ${activeTab === 'faqs' ? 'text-black' : 'text-gray-400'
+              className={`pb-4 px-2 font-bold transition relative ${activeTab === 'faqs' ? 'text-black' : 'text-gray-600'
                 }`}
             >
               FAQs
@@ -648,7 +624,7 @@ const ProductDetail = () => {
           {/* Tab Content */}
           {activeTab === 'details' && (
             <div className="prose max-w-none">
-              <p className="text-gray-700 leading-relaxed">{product.description}</p>
+              <p className="text-gray-800 leading-relaxed font-medium">{product.description}</p>
             </div>
           )}
 
@@ -656,13 +632,13 @@ const ProductDetail = () => {
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-bold">
-                  All Reviews <span className="text-gray-400">({reviewCount})</span>
+                  All Reviews <span className="text-gray-600">({reviewCount})</span>
                 </h3>
                 <div className="flex gap-3">
-                  <button className="px-6 py-2.5 bg-gray-100 rounded-full text-sm font-medium hover:bg-gray-200 transition">
+                  <button className="px-6 py-2.5 bg-gray-100 rounded-full text-sm font-bold hover:bg-gray-200 transition">
                     Latest
                   </button>
-                  <button className="px-6 py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition">
+                  <button className="px-6 py-2.5 bg-black text-white rounded-full text-sm font-bold hover:bg-gray-800 transition">
                     Write a Review
                   </button>
                 </div>
@@ -683,17 +659,18 @@ const ProductDetail = () => {
                       </div>
 
                       <div className="flex items-center gap-2 mb-3">
-                        <h4 className="font-bold">{review.customer_name}</h4>
+                        <h4 className="font-bold text-gray-900">{review.customer_name}</h4>
                         {review.is_verified_purchase && (
-                          <span className="flex items-center gap-1 text-xs text-white bg-green-500 px-2 py-0.5 rounded-full">
+                          <span className="flex items-center gap-1 text-xs text-white bg-green-600 font-bold px-2 py-0.5 rounded-full">
                             <FiCheck className="w-3 h-3" />
                           </span>
                         )}
                       </div>
 
-                      {review.review_text && <p className="text-gray-600 text-sm mb-3">{review.review_text}</p>}
+                      {review.review_text && <p className="text-gray-700 text-sm font-medium mb-3">{review.review_text}</p>}
 
-                      <p className="text-xs text-gray-400">
+                      {/* FIXED: Date text - improved contrast */}
+                      <p className="text-xs text-gray-600 font-medium">
                         Posted on{' '}
                         {new Date(review.created_at).toLocaleDateString('en-US', {
                           month: 'long',
@@ -706,13 +683,13 @@ const ProductDetail = () => {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <p className="text-gray-500">No reviews yet. Be the first to review!</p>
+                  <p className="text-gray-600 font-medium">No reviews yet. Be the first to review!</p>
                 </div>
               )}
 
               {reviews.length > 6 && (
                 <div className="text-center mt-8">
-                  <button className="px-12 py-3 border-2 border-gray-300 rounded-full font-medium hover:bg-gray-50 transition">
+                  <button className="px-12 py-3 border-2 border-gray-300 rounded-full font-bold hover:bg-gray-50 transition">
                     Load More Reviews
                   </button>
                 </div>
@@ -722,7 +699,7 @@ const ProductDetail = () => {
 
           {activeTab === 'faqs' && (
             <div className="max-w-3xl">
-              <p className="text-gray-600">Frequently asked questions will appear here.</p>
+              <p className="text-gray-700 font-medium">Frequently asked questions will appear here.</p>
             </div>
           )}
         </div>
