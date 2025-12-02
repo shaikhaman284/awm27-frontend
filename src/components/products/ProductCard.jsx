@@ -120,8 +120,8 @@ const ProductCard = ({ product }) => {
               <FiStar
                 key={index}
                 className={`w-4 h-4 ${index < Math.floor(averageRating)
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
                   }`}
               />
             ))}

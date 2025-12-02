@@ -352,105 +352,111 @@ const Home = () => {
               ))}
             </div>
           </div>
-        </section>
+        </section >
       )}
 
       {/* Categories Section */}
-      {!loading && categories.length > 0 && (
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold">BROWSE BY DRESS STYLE</h2>
-              <Link
-                to="/products"
-                className="hidden md:block text-black hover:underline font-medium"
-              >
-                View All
-              </Link>
-            </div>
-
-            {/* Horizontal Scrollable Container */}
-            <div className="relative">
-              <div className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {categories.map((category, index) => (
-                  <Link
-                    key={`category-${category.id}-${index}`}
-                    to={`/products?category=${category.id}`}
-                    className="group relative bg-white rounded-2xl p-6 overflow-hidden hover:shadow-xl transition-all duration-300 flex-shrink-0 snap-start"
-                    style={{ width: '200px', height: '160px' }}
-                    aria-label={`Browse ${category.name} category`}
-                  >
-                    {/* Background gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-300" aria-hidden="true" />
-
-                    {/* Icon decoration */}
-                    <div className="absolute right-4 bottom-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" aria-hidden="true">
-                      {getCategoryIcon(category.name)}
-                    </div>
-
-                    {/* Content */}
-                    <div className="relative z-10">
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-black transition line-clamp-2">
-                        {category.name}
-                      </h3>
-                    </div>
-                  </Link>
-                ))}
+      {
+        !loading && categories.length > 0 && (
+          <section className="py-16 bg-gray-50">
+            <div className="container mx-auto px-4">
+              <div className="flex justify-between items-center mb-10">
+                <h2 className="text-3xl md:text-4xl font-bold">BROWSE BY DRESS STYLE</h2>
+                <Link
+                  to="/products"
+                  className="hidden md:block text-black hover:underline font-medium"
+                >
+                  View All
+                </Link>
               </div>
 
-              {/* Scroll indicator for mobile */}
-              <div className="md:hidden text-center mt-2 text-xs text-gray-500" aria-hidden="true">
-                ← Swipe to see more →
+              {/* Horizontal Scrollable Container */}
+              <div className="relative">
+                <div className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {categories.map((category, index) => (
+                    <Link
+                      key={`category-${category.id}-${index}`}
+                      to={`/products?category=${category.id}`}
+                      className="group relative bg-white rounded-2xl p-6 overflow-hidden hover:shadow-xl transition-all duration-300 flex-shrink-0 snap-start"
+                      style={{ width: '200px', height: '160px' }}
+                      aria-label={`Browse ${category.name} category`}
+                    >
+                      {/* Background gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-gray-100 group-hover:to-gray-200 transition-all duration-300" aria-hidden="true" />
+
+                      {/* Icon decoration */}
+                      <div className="absolute right-4 bottom-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" aria-hidden="true">
+                        {getCategoryIcon(category.name)}
+                      </div>
+
+                      {/* Content */}
+                      <div className="relative z-10">
+                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-black transition line-clamp-2">
+                          {category.name}
+                        </h3>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Scroll indicator for mobile */}
+                <div className="md:hidden text-center mt-2 text-xs text-gray-500" aria-hidden="true">
+                  ← Swipe to see more →
+                </div>
               </div>
             </div>
-          </div>
 
-          <style jsx>{`
+            <style jsx>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
             }
           `}</style>
-        </section>
-      )}
+          </section>
+        )
+      }
 
       {/* Featured Products */}
-      {!loading && featuredProducts.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold">NEW ARRIVALS</h2>
-              <Link
-                to="/products"
-                className="hidden md:block text-black hover:underline font-medium text-lg"
-              >
-                View All
-              </Link>
+      {
+        !loading && featuredProducts.length > 0 && (
+          <section className="py-16 bg-white">
+            <div className="container mx-auto px-4">
+              <div className="flex justify-between items-center mb-10">
+                <h2 className="text-3xl md:text-4xl font-bold">NEW ARRIVALS</h2>
+                <Link
+                  to="/products"
+                  className="hidden md:block text-black hover:underline font-medium text-lg"
+                >
+                  View All
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              <div className="text-center mt-10">
+                <Link
+                  to="/products"
+                  className="inline-block px-16 py-4 border-2 border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-lg"
+                >
+                  View All
+                </Link>
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-            <div className="text-center mt-10">
-              <Link
-                to="/products"
-                className="inline-block px-16 py-4 border-2 border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-lg"
-              >
-                View All
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )
+      }
 
       {/* Loading State */}
-      {loading && (
-        <div className="flex justify-center items-center py-32">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-black"></div>
-        </div>
-      )}
-    </div>
+      {
+        loading && (
+          <div className="flex justify-center items-center py-32">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-black"></div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

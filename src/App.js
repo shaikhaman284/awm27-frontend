@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { HelmetProvider } from 'react-helmet-async';
@@ -6,20 +6,21 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Layout from './components/common/Layout';
 import ScrollToTop from './utils/ScrollToTop';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
-// Pages
-import Home from './pages/Home';
-import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail';
-import ShopDetail from './pages/ShopDetail';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Orders from './pages/Orders';
-import OrderSuccess from './pages/OrderSuccess';
-import OrderDetail from './pages/OrderDetail';
-import WriteReview from './pages/WriteReview';
-import Profile from './pages/Profile';
-import Login from './pages/Login';
+// Lazy load pages for code splitting
+const Home = lazy(() => import('./pages/Home'));
+const Products = lazy(() => import('./pages/Products'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const ShopDetail = lazy(() => import('./pages/ShopDetail'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Orders = lazy(() => import('./pages/Orders'));
+const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
+const OrderDetail = lazy(() => import('./pages/OrderDetail'));
+const WriteReview = lazy(() => import('./pages/WriteReview'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Login = lazy(() => import('./pages/Login'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -38,65 +39,67 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <Layout>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
-                <Route path="/shop/:id" element={<ShopDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/login" element={<Login />} />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/products/:id" element={<ProductDetail />} />
+                  <Route path="/shop/:id" element={<ShopDetail />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/login" element={<Login />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/checkout"
-                  element={
-                    <ProtectedRoute>
-                      <Checkout />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/orders"
-                  element={
-                    <ProtectedRoute>
-                      <Orders />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/orders/:orderNumber"
-                  element={
-                    <ProtectedRoute>
-                      <OrderDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/order-success/:orderNumber"
-                  element={
-                    <ProtectedRoute>
-                      <OrderSuccess />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/write-review"
-                  element={
-                    <ProtectedRoute>
-                      <WriteReview />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
+                  {/* Protected Routes */}
+                  <Route
+                    path="/checkout"
+                    element={
+                      <ProtectedRoute>
+                        <Checkout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/orders"
+                    element={
+                      <ProtectedRoute>
+                        <Orders />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/orders/:orderNumber"
+                    element={
+                      <ProtectedRoute>
+                        <OrderDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/order-success/:orderNumber"
+                    element={
+                      <ProtectedRoute>
+                        <OrderSuccess />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/write-review"
+                    element={
+                      <ProtectedRoute>
+                        <WriteReview />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </Suspense>
             </Layout>
 
             {/* Toast Notifications */}
@@ -113,7 +116,7 @@ function App() {
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>
-    </HelmetProvider>
+    </HelmetProvider >
   );
 }
 
