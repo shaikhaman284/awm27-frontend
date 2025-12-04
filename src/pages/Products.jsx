@@ -6,7 +6,6 @@ import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
 
-
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -78,6 +77,23 @@ const Products = () => {
     return `Browse ${products.length}+ clothing products from local Amravati stores. Men's, women's, kids wear with Cash on Delivery. Free COD on orders ≥ ₹500. Shop now!`;
   };
 
+  // Helper function to get product image URL
+  const getProductImageUrl = (product) => {
+    // Priority: main_image > images[0] > fallback
+    if (product.main_image) {
+      return product.main_image.startsWith('http')
+        ? product.main_image
+        : `https://awm27.shop${product.main_image}`;
+    }
+    if (product.images && product.images.length > 0) {
+      const firstImage = product.images[0];
+      return firstImage.startsWith('http')
+        ? firstImage
+        : `https://awm27.shop${firstImage}`;
+    }
+    // Fallback to a default product image
+    return 'https://awm27.shop/static/images/default-product.jpg';
+  };
 
   useEffect(() => {
     loadCategories();
@@ -166,7 +182,7 @@ const Products = () => {
                 "@type": "Product",
                 "@id": `https://awm27.shop/products/${product.id}`,
                 "name": product.name,
-                "image": product.images?.[0] || "",
+                "image": getProductImageUrl(product),
                 "description": product.description || product.name,
                 "url": `https://awm27.shop/products/${product.id}`,
                 "offers": {
@@ -201,7 +217,6 @@ const Products = () => {
           }
         }}
       />
-
 
       {/* Breadcrumb */}
       <div className="border-b border-gray-200">
