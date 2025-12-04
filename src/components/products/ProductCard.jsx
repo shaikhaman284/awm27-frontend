@@ -33,14 +33,26 @@ const ProductCard = React.memo(({ product }) => {
     [isInCart, product.id]
   );
 
-  // PERFORMANCE: Memoize discount calculation
+  // NEW: Real discount calculation from MRP
   const priceInfo = useMemo(() => {
-    const discountPercent = 20;
-    const fakeOriginalPrice = Math.round(
-      product.display_price / (1 - discountPercent / 100)
-    );
-    return { discountPercent, fakeOriginalPrice };
-  }, [product.display_price]);
+    // Check if product has MRP and MRP is higher than display price
+    if (product.mrp && product.mrp > product.display_price) {
+      const discountPercent = Math.round(
+        ((product.mrp - product.display_price) / product.mrp) * 100
+      );
+      return {
+        discountPercent,
+        mrp: product.mrp,
+        hasDiscount: true
+      };
+    }
+    // No discount to show
+    return {
+      discountPercent: 0,
+      mrp: null,
+      hasDiscount: false
+    };
+  }, [product.mrp, product.display_price]);
 
   // PERFORMANCE: Memoize stock info calculation (expensive operation)
   const stockInfo = useMemo(() => {
@@ -164,8 +176,8 @@ const ProductCard = React.memo(({ product }) => {
               <FiStar
                 key={index}
                 className={`w-4 h-4 ${index < Math.floor(averageRating)
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
                   }`}
                 aria-hidden="true"
               />
@@ -176,15 +188,15 @@ const ProductCard = React.memo(({ product }) => {
           </span>
         </div>
 
-        {/* Price Section */}
+        {/* Price Section - UPDATED with real MRP discount */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xl md:text-2xl font-bold text-gray-900">
             ₹{product.display_price}
           </span>
-          {priceInfo.discountPercent > 0 && (
+          {priceInfo.hasDiscount && (
             <>
               <span className="text-lg md:text-xl font-bold text-gray-500 line-through">
-                ₹{priceInfo.fakeOriginalPrice}
+                ₹{priceInfo.mrp}
               </span>
               <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">
                 -{priceInfo.discountPercent}%
@@ -247,6 +259,7 @@ const ProductCard = React.memo(({ product }) => {
     prevProps.product.id === nextProps.product.id &&
     prevProps.product.stock_quantity === nextProps.product.stock_quantity &&
     prevProps.product.display_price === nextProps.product.display_price &&
+    prevProps.product.mrp === nextProps.product.mrp &&
     prevProps.product.main_image === nextProps.product.main_image
   );
 });

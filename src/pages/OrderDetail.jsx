@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiCheck, FiPhone, FiMapPin, FiAlertCircle, FiX, FiPackage, FiDownload, FiChevronRight } from 'react-icons/fi';
+import { FiCheck, FiPhone, FiMapPin, FiAlertCircle, FiX, FiPackage, FiDownload, FiChevronRight, FiTag } from 'react-icons/fi';
 import apiService from '../services/api';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
 import { generateInvoice } from '../utils/invoiceGenerator';
 import SEO from '../components/common/SEO';
-
 
 const OrderDetail = () => {
   const { orderNumber } = useParams();
@@ -21,6 +20,47 @@ const OrderDetail = () => {
     loadOrderDetail();
     // eslint-disable-next-line
   }, [orderNumber]);
+
+  // Calculate MRP totals and savings
+  const calculateMRPTotals = useMemo(() => {
+    if (!order || !order.items) {
+      return {
+        totalMRP: 0,
+        totalDisplayPrice: 0,
+        productSavings: 0,
+        hasMRPProducts: false
+      };
+    }
+
+    let totalMRP = 0;
+    let totalDisplayPrice = 0;
+    let hasMRPProducts = false;
+
+    order.items.forEach(item => {
+      const displayPrice = Number(item.display_price) * item.quantity;
+      totalDisplayPrice += displayPrice;
+
+      // Check if mrp exists and is greater than display_price
+      const itemMRP = Number(item.mrp || 0);
+      const itemDisplayPrice = Number(item.display_price);
+
+      if (itemMRP && itemMRP > itemDisplayPrice) {
+        totalMRP += itemMRP * item.quantity;
+        hasMRPProducts = true;
+      } else {
+        totalMRP += displayPrice;
+      }
+    });
+
+    const productSavings = totalMRP - totalDisplayPrice;
+
+    return {
+      totalMRP,
+      totalDisplayPrice,
+      productSavings,
+      hasMRPProducts
+    };
+  }, [order]);
 
   const loadOrderDetail = async () => {
     try {
@@ -314,67 +354,106 @@ const OrderDetail = () => {
           <div className="border-2 border-gray-200 rounded-3xl p-6 md:p-8 mb-6">
             <h2 className="text-2xl font-bold mb-6">Order Items</h2>
             <div className="space-y-4">
-              {order.items.map((item) => (
-                <div key={item.id} className="border-2 border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition">
-                  <div className="flex gap-4 p-5">
-                    {/* Product Image */}
-                    <div className="w-24 h-24 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
-                      {item.product_image ? (
-                        <img
-                          src={item.product_image}
-                          alt={item.product_name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.querySelector('.fallback-icon').style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div
-                        className="fallback-icon w-full h-full flex items-center justify-center"
-                        style={{ display: item.product_image ? 'none' : 'flex' }}
-                      >
-                        <FiPackage className="w-10 h-10 text-gray-400" />
+              {order.items.map((item) => {
+                // Calculate price info with proper type conversion
+                const itemMRP = Number(item.mrp || 0);
+                const itemDisplayPrice = Number(item.display_price);
+
+                const priceInfo = itemMRP && itemMRP > itemDisplayPrice
+                  ? {
+                    discountPercent: Math.round(
+                      ((itemMRP - itemDisplayPrice) / itemMRP) * 100
+                    ),
+                    mrp: itemMRP,
+                    hasDiscount: true
+                  }
+                  : { hasDiscount: false };
+
+                return (
+                  <div key={item.id} className="border-2 border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition">
+                    <div className="flex gap-4 p-5">
+                      {/* Product Image */}
+                      <div className="w-24 h-24 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
+                        {item.product_image ? (
+                          <img
+                            src={item.product_image}
+                            alt={item.product_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.querySelector('.fallback-icon').style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="fallback-icon w-full h-full flex items-center justify-center"
+                          style={{ display: item.product_image ? 'none' : 'flex' }}
+                        >
+                          <FiPackage className="w-10 h-10 text-gray-400" />
+                        </div>
+                      </div>
+
+                      {/* Product Details */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-lg text-gray-900 mb-2">{item.product_name}</p>
+                        {(item.size || item.color) && (
+                          <div className="flex gap-2 mb-2">
+                            {item.size && (
+                              <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-medium">
+                                Size: {item.size}
+                              </span>
+                            )}
+                            {item.color && (
+                              <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-medium capitalize">
+                                Color: {item.color}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-sm text-gray-600 mb-3">Quantity: {item.quantity}</p>
+
+                        {/* Price with MRP */}
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <span className="font-bold text-xl text-black">
+                            ₹{item.display_price}
+                          </span>
+                          {priceInfo.hasDiscount && (
+                            <>
+                              <span className="text-base font-bold text-gray-500 line-through">
+                                ₹{priceInfo.mrp}
+                              </span>
+                              <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">
+                                -{priceInfo.discountPercent}%
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <p className="font-bold text-lg text-black">
+                          Total: ₹{item.item_subtotal}
+                          {priceInfo.hasDiscount && (
+                            <span className="ml-2 text-sm text-gray-500 line-through">
+                              ₹{(priceInfo.mrp * item.quantity).toFixed(2)}
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Product Details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-lg text-gray-900 mb-2">{item.product_name}</p>
-                      {(item.size || item.color) && (
-                        <div className="flex gap-2 mb-2">
-                          {item.size && (
-                            <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-medium">
-                              Size: {item.size}
-                            </span>
-                          )}
-                          {item.color && (
-                            <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-medium capitalize">
-                              Color: {item.color}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      <p className="text-sm text-gray-600 mb-3">Quantity: {item.quantity}</p>
-                      <p className="font-bold text-xl text-black">
-                        ₹{item.display_price} × {item.quantity} = ₹{item.item_subtotal}
-                      </p>
-                    </div>
+                    {/* Review button */}
+                    {order.order_status === 'delivered' && (
+                      <div className="px-5 pb-5">
+                        <button
+                          onClick={() => handleWriteReview(item)}
+                          className="w-full py-3 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition"
+                        >
+                          Write Review
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Review button */}
-                  {order.order_status === 'delivered' && (
-                    <div className="px-5 pb-5">
-                      <button
-                        onClick={() => handleWriteReview(item)}
-                        className="w-full py-3 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition"
-                      >
-                        Write Review
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -414,7 +493,6 @@ const OrderDetail = () => {
                     <p className="text-sm text-gray-600 mb-3">{order.shop_contact}</p>
                   )}
                   {order.shop_contact && (
-
                     <a href={`tel:${order.shop_contact}`}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition text-sm"
                     >
@@ -431,10 +509,42 @@ const OrderDetail = () => {
           <div className="border-2 border-gray-200 rounded-3xl p-6 md:p-8">
             <h2 className="text-2xl font-bold mb-6">Payment Summary</h2>
             <div className="space-y-4">
+              {/* MRP Total */}
+              {calculateMRPTotals.hasMRPProducts && (
+                <div className="flex justify-between text-gray-500">
+                  <span>Total MRP</span>
+                  <span className="line-through">₹{calculateMRPTotals.totalMRP.toFixed(2)}</span>
+                </div>
+              )}
+
+              {/* Product Discount */}
+              {calculateMRPTotals.hasMRPProducts && calculateMRPTotals.productSavings > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Product Discount</span>
+                  <span className="font-bold">
+                    -₹{calculateMRPTotals.productSavings.toFixed(2)}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between text-gray-600">
                 <span>Items Total</span>
                 <span className="font-semibold text-black">₹{order.subtotal}</span>
               </div>
+
+              {/* Coupon Discount */}
+              {order.coupon_discount && Number(order.coupon_discount) > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span className="flex items-center gap-2">
+                    <FiTag className="w-4 h-4" />
+                    Coupon Discount
+                  </span>
+                  <span className="font-bold">
+                    -₹{Number(order.coupon_discount).toFixed(2)}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Fee</span>
                 <span className="font-semibold text-black">
@@ -443,6 +553,22 @@ const OrderDetail = () => {
                   )}
                 </span>
               </div>
+
+              {/* Total Savings */}
+              {(calculateMRPTotals.productSavings > 0 || (order.coupon_discount && Number(order.coupon_discount) > 0)) && (
+                <>
+                  <hr className="border-gray-300" />
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-green-700">Total Savings</span>
+                      <span className="text-lg font-bold text-green-700">
+                        ₹{(calculateMRPTotals.productSavings + (Number(order.coupon_discount) || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <hr className="border-gray-300" />
               <div className="flex justify-between font-bold text-2xl">
                 <span>Total</span>

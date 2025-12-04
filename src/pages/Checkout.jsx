@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiCheck, FiChevronRight, FiEdit2, FiPackage } from 'react-icons/fi';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FiCheck, FiChevronRight, FiEdit2, FiPackage, FiTag } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
 
-
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { cart, calculateTotals, clearCart } = useCart();
   const totals = calculateTotals();
@@ -17,6 +17,9 @@ const Checkout = () => {
   const [step, setStep] = useState(1); // 1: Address, 2: Payment, 3: Review
   const [loading, setLoading] = useState(false);
   const isOrderPlaced = useRef(false); // Track if order was successfully placed
+
+  // Get applied coupon from Cart.jsx via navigation state
+  const [appliedCoupon, setAppliedCoupon] = useState(location.state?.appliedCoupon || null);
 
   const [formData, setFormData] = useState({
     customer_name: user?.name || '',
@@ -31,15 +34,50 @@ const Checkout = () => {
 
   // Helper function to get the first image from product
   const getProductImage = (product) => {
-    // Check if images array exists and has items
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       return product.images[0];
     }
-    // Fallback checks
     if (product.main_image) return product.main_image;
     if (product.image1) return product.image1;
     if (product.image) return product.image;
     return null;
+  };
+
+  // Calculate MRP totals and savings
+  const calculateMRPTotals = useMemo(() => {
+    let totalMRP = 0;
+    let totalDisplayPrice = 0;
+    let hasMRPProducts = false;
+
+    cart.forEach(item => {
+      const displayPrice = item.product.display_price * item.quantity;
+      totalDisplayPrice += displayPrice;
+
+      if (item.product.mrp && item.product.mrp > item.product.display_price) {
+        totalMRP += item.product.mrp * item.quantity;
+        hasMRPProducts = true;
+      } else {
+        totalMRP += displayPrice;
+      }
+    });
+
+    const productSavings = totalMRP - totalDisplayPrice;
+
+    return {
+      totalMRP,
+      totalDisplayPrice,
+      productSavings,
+      hasMRPProducts,
+      totalSavings: productSavings + (appliedCoupon?.discount_amount || 0)
+    };
+  }, [cart, appliedCoupon]);
+
+  // Calculate final total with coupon discount
+  const getFinalTotal = () => {
+    if (appliedCoupon && appliedCoupon.discount_amount) {
+      return Math.max(0, totals.total - appliedCoupon.discount_amount);
+    }
+    return totals.total;
   };
 
   useEffect(() => {
@@ -92,7 +130,8 @@ const Checkout = () => {
           size: item.size || null,
           color: item.color || null
         })),
-        ...formData
+        ...formData,
+        coupon_code: appliedCoupon ? appliedCoupon.coupon.code : null
       };
 
       const response = await apiService.createOrder(orderData);
@@ -117,11 +156,11 @@ const Checkout = () => {
       <SEO
         title={`Checkout - Step ${step} of 3 | Amravati Wears Market`}
         description={`Complete your order checkout. ${step === 1
-            ? 'Enter delivery address.'
-            : step === 2
-              ? 'Select payment method.'
-              : 'Review and place your order.'
-          } Total: ₹${totals.total.toFixed(2)}`}
+          ? 'Enter delivery address.'
+          : step === 2
+            ? 'Select payment method.'
+            : 'Review and place your order.'
+          } Total: ₹${getFinalTotal().toFixed(2)}`}
         url="https://awm27.shop/checkout"
         noindex={true}
       />
@@ -314,6 +353,24 @@ const Checkout = () => {
                 </div>
               </div>
 
+              {/* Applied Coupon Display */}
+              {appliedCoupon && (
+                <div className="mb-6 p-5 bg-green-50 rounded-2xl border-2 border-green-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <FiTag className="w-5 h-5 text-green-700" />
+                      <h3 className="font-bold text-green-900">Coupon Applied</h3>
+                    </div>
+                    <span className="text-sm font-bold text-green-700">
+                      {appliedCoupon.coupon.code}
+                    </span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    You're saving ₹{appliedCoupon.discount_amount.toFixed(2)} with this coupon!
+                  </p>
+                </div>
+              )}
+
               {/* Payment Options */}
               <div className="space-y-4 mb-8">
                 <h3 className="font-bold mb-3">Select Payment Method</h3>
@@ -383,6 +440,15 @@ const Checkout = () => {
                 <div className="space-y-3">
                   {cart.map((item) => {
                     const imageUrl = getProductImage(item.product);
+                    const priceInfo = item.product.mrp && item.product.mrp > item.product.display_price
+                      ? {
+                        discountPercent: Math.round(
+                          ((item.product.mrp - item.product.display_price) / item.product.mrp) * 100
+                        ),
+                        mrp: item.product.mrp,
+                        hasDiscount: true
+                      }
+                      : { hasDiscount: false };
 
                     return (
                       <div
@@ -409,11 +475,26 @@ const Checkout = () => {
                             {item.size && item.color && ' • '}
                             {item.color && `Color: ${item.color}`}
                           </p>
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm text-gray-600">
-                              ₹{item.product.display_price} × {item.quantity}
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-bold text-gray-900">
+                              ₹{item.product.display_price}
                             </p>
-                            <p className="font-bold">
+                            {priceInfo.hasDiscount && (
+                              <>
+                                <p className="text-xs text-gray-500 line-through">
+                                  ₹{priceInfo.mrp}
+                                </p>
+                                <span className="text-xs font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded">
+                                  -{priceInfo.discountPercent}%
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-600">
+                              Qty: {item.quantity}
+                            </p>
+                            <p className="font-bold text-sm">
                               ₹{(item.product.display_price * item.quantity).toFixed(2)}
                             </p>
                           </div>
@@ -450,10 +531,42 @@ const Checkout = () => {
               <div className="mb-6 p-5 border-2 border-gray-200 rounded-2xl">
                 <h3 className="font-bold mb-4">Order Summary</h3>
                 <div className="space-y-3">
+                  {/* MRP Total */}
+                  {calculateMRPTotals.hasMRPProducts && (
+                    <div className="flex justify-between text-gray-500">
+                      <span>Total MRP</span>
+                      <span className="line-through">₹{calculateMRPTotals.totalMRP.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Product Discount */}
+                  {calculateMRPTotals.hasMRPProducts && calculateMRPTotals.productSavings > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Product Discount</span>
+                      <span className="font-bold">
+                        -₹{calculateMRPTotals.productSavings.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
                     <span className="font-semibold text-black">₹{totals.subtotal.toFixed(2)}</span>
                   </div>
+
+                  {/* Coupon Discount */}
+                  {appliedCoupon && appliedCoupon.discount_amount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-2">
+                        <FiTag className="w-4 h-4" />
+                        Coupon ({appliedCoupon.coupon.code})
+                      </span>
+                      <span className="font-semibold">
+                        -₹{appliedCoupon.discount_amount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-gray-600">
                     <span>Delivery Fee</span>
                     <span className="font-semibold text-black">
@@ -462,10 +575,26 @@ const Checkout = () => {
                       )}
                     </span>
                   </div>
+
+                  {/* Total Savings Summary */}
+                  {calculateMRPTotals.totalSavings > 0 && (
+                    <>
+                      <hr className="border-gray-300" />
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-semibold text-green-700">Total Savings</span>
+                          <span className="text-lg font-bold text-green-700">
+                            ₹{calculateMRPTotals.totalSavings.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   <hr className="border-gray-300" />
                   <div className="flex justify-between text-xl font-bold">
                     <span>Total</span>
-                    <span>₹{totals.total.toFixed(2)}</span>
+                    <span>₹{getFinalTotal().toFixed(2)}</span>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-xl">
                     <p className="text-sm font-medium">Payment Method: Cash on Delivery</p>
@@ -488,7 +617,7 @@ const Checkout = () => {
                       Terms & Conditions
                     </button>{' '}
                     and confirm that I will pay{' '}
-                    <span className="font-bold">₹{totals.total.toFixed(2)}</span> in cash upon delivery.
+                    <span className="font-bold">₹{getFinalTotal().toFixed(2)}</span> in cash upon delivery.
                   </span>
                 </label>
               </div>

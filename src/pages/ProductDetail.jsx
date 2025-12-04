@@ -32,6 +32,24 @@ const ProductDetail = () => {
   const averageRating = useMemo(() => product?.average_rating ? parseFloat(product.average_rating) : 0, [product?.average_rating]);
   const reviewCount = useMemo(() => product?.review_count || reviews.length, [product?.review_count, reviews.length]);
 
+  // NEW: Real discount calculation from MRP
+  const priceInfo = useMemo(() => {
+    if (!product) return { hasDiscount: false, discountPercent: 0, mrp: null };
+
+    if (product.mrp && product.mrp > product.display_price) {
+      const discountPercent = Math.round(
+        ((product.mrp - product.display_price) / product.mrp) * 100
+      );
+      return {
+        hasDiscount: true,
+        discountPercent,
+        mrp: product.mrp
+      };
+    }
+
+    return { hasDiscount: false, discountPercent: 0, mrp: null };
+  }, [product?.mrp, product?.display_price]);
+
   // Generate dynamic product schema with variants
   const getProductSchema = () => {
     if (!product) return {};
@@ -47,14 +65,28 @@ const ProductDetail = () => {
         : "https://schema.org/OutOfStock";
     }
 
+    // CRITICAL FIX: Ensure image field is ALWAYS populated with valid URLs
+    // Google Merchant Listings requires at least one image
+    const productImages = [];
+    if (product.images && product.images.length > 0) {
+      productImages.push(...product.images);
+    } else if (product.main_image) {
+      productImages.push(product.main_image);
+    } else {
+      // Fallback to logo if no product images (should rarely happen)
+      productImages.push("https://awm27.shop/logo192.png");
+    }
+
     const baseSchema = {
       "@context": "https://schema.org",
       "@type": "Product",
       "@id": `https://awm27.shop/products/${product.id}`,
       "name": product.name,
       "description": product.description || `${product.name} available at ${product.shop_name} in Amravati`,
-      "image": product.images || [],
+      "image": productImages,
       "sku": product.id.toString(),
+      "gtin": product.gtin || `AWM${product.id.toString().padStart(12, '0')}`,
+      "mpn": product.mpn || `AWM-${product.id}`,
       "brand": {
         "@type": "Brand",
         "name": product.shop_name || "Amravati Wears Market"
@@ -64,7 +96,7 @@ const ProductDetail = () => {
         "@type": "Offer",
         "url": `https://awm27.shop/products/${product.id}`,
         "priceCurrency": "INR",
-        "price": product.display_price,
+        "price": product.display_price.toString(),
         "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
         "availability": availability,
         "itemCondition": "https://schema.org/NewCondition",
@@ -310,9 +342,6 @@ const ProductDetail = () => {
 
   if (!product) return null;
 
-  const discountPercent = 20;
-  const originalPrice = Math.round(product.display_price / (1 - discountPercent / 100));
-
   const isVariantAvailable = hasVariants ? selectedVariant !== null : availableStock > 0;
 
   return (
@@ -416,13 +445,19 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Price Section */}
+            {/* Price Section - UPDATED with real MRP discount */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl font-bold text-gray-900">₹{product.display_price}</span>
-              <span className="text-2xl text-gray-500 font-bold line-through">₹{originalPrice}</span>
-              <span className="text-sm font-bold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
-                -{discountPercent}%
-              </span>
+              {priceInfo.hasDiscount && (
+                <>
+                  <span className="text-2xl text-gray-500 font-bold line-through">
+                    ₹{priceInfo.mrp}
+                  </span>
+                  <span className="text-sm font-bold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
+                    -{priceInfo.discountPercent}%
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Description */}

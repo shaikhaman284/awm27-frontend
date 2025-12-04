@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiChevronRight, FiTag, FiArrowRight } from 'react-icons/fi';
+import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiChevronRight, FiTag, FiArrowRight, FiX } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { COD_FEE_THRESHOLD } from '../utils/constants';
+import apiService from '../services/api';
+import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
-
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -13,12 +14,18 @@ const Cart = () => {
   const { cart, updateQuantity, removeFromCart, calculateTotals } = useCart();
   const totals = calculateTotals();
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
   const handleCheckout = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: { pathname: '/checkout' } } });
       return;
     }
-    navigate('/checkout');
+    navigate('/checkout', { state: { appliedCoupon } });
   };
 
   // Helper function to get the first image from product
@@ -32,7 +39,7 @@ const Cart = () => {
     return null;
   };
 
-  // NEW: Get available stock for cart item
+  // Get available stock for cart item
   const getItemStock = (item) => {
     if (item.variantId && item.product.variants) {
       const variant = item.product.variants.find(v => v.id === item.variantId);
@@ -40,6 +47,115 @@ const Cart = () => {
     }
     return item.product.stock_quantity;
   };
+
+  // NEW: Calculate price info with MRP and discount
+  const getPriceInfo = (product) => {
+    if (product.mrp && product.mrp > product.display_price) {
+      const discountPercent = Math.round(
+        ((product.mrp - product.display_price) / product.mrp) * 100
+      );
+      return {
+        discountPercent,
+        mrp: product.mrp,
+        hasDiscount: true
+      };
+    }
+    return {
+      discountPercent: 0,
+      mrp: null,
+      hasDiscount: false
+    };
+  };
+
+  // Apply coupon function
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error('Please enter a coupon code');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast.error('Please login to apply coupon');
+      navigate('/login');
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponError('');
+
+    try {
+      const requestData = {
+        code: couponCode.toUpperCase(),
+        cart_items: cart.map(item => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: item.product.display_price
+        }))
+      };
+
+      const response = await apiService.validateCoupon(requestData);
+
+      if (response.data.valid) {
+        setAppliedCoupon(response.data);
+        setCouponError('');
+        toast.success(response.data.message || 'Coupon applied successfully!');
+      } else {
+        toast.error('Coupon is not valid');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Invalid coupon code';
+      setCouponError(errorMessage);
+      setAppliedCoupon(null);
+      toast.error(errorMessage);
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  // Remove coupon function
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+    toast.success('Coupon removed');
+  };
+
+  // Calculate final total with coupon discount
+  const getFinalTotal = () => {
+    if (appliedCoupon && appliedCoupon.discount_amount) {
+      return Math.max(0, totals.total - appliedCoupon.discount_amount);
+    }
+    return totals.total;
+  };
+
+  // NEW: Calculate total MRP and savings
+  const calculateMRPTotals = useMemo(() => {
+    let totalMRP = 0;
+    let totalDisplayPrice = 0;
+    let hasMRPProducts = false;
+
+    cart.forEach(item => {
+      const displayPrice = item.product.display_price * item.quantity;
+      totalDisplayPrice += displayPrice;
+
+      if (item.product.mrp && item.product.mrp > item.product.display_price) {
+        totalMRP += item.product.mrp * item.quantity;
+        hasMRPProducts = true;
+      } else {
+        totalMRP += displayPrice;
+      }
+    });
+
+    const productSavings = totalMRP - totalDisplayPrice;
+
+    return {
+      totalMRP,
+      totalDisplayPrice,
+      productSavings,
+      hasMRPProducts,
+      totalSavings: productSavings + (appliedCoupon?.discount_amount || 0)
+    };
+  }, [cart, appliedCoupon]);
 
   if (cart.length === 0) {
     return (
@@ -71,7 +187,7 @@ const Cart = () => {
     <div className="min-h-screen bg-white">
       <SEO
         title={`Shopping Cart (${totals.itemCount} ${totals.itemCount === 1 ? 'Item' : 'Items'}) | Amravati Wears Market`}
-        description={`Review your shopping cart with ${totals.itemCount} items. Total: ₹${totals.total.toFixed(2)}. Proceed to checkout for Cash on Delivery.`}
+        description={`Review your shopping cart with ${totals.itemCount} items. Total: ₹${getFinalTotal().toFixed(2)}. Proceed to checkout for Cash on Delivery.`}
         url="https://awm27.shop/cart"
         noindex={true}
       />
@@ -97,7 +213,8 @@ const Cart = () => {
             <div className="border-2 border-gray-200 rounded-3xl divide-y-2 divide-gray-200">
               {cart.map((item) => {
                 const imageUrl = getProductImage(item.product);
-                const availableStock = getItemStock(item); // NEW
+                const availableStock = getItemStock(item);
+                const priceInfo = getPriceInfo(item.product);
 
                 return (
                   <div
@@ -144,7 +261,7 @@ const Cart = () => {
 
                       <p className="text-sm text-gray-600 mb-3">{item.product.shop_name}</p>
 
-                      {/* NEW: Variants Display - Enhanced */}
+                      {/* Variants Display */}
                       {(item.size || item.color) && (
                         <div className="flex flex-wrap gap-2 text-sm mb-3">
                           {item.size && (
@@ -160,18 +277,34 @@ const Cart = () => {
                         </div>
                       )}
 
-                      {/* NEW: Stock Warning */}
+                      {/* Stock Warning */}
                       {availableStock < 5 && availableStock > 0 && (
                         <div className="mb-3 text-xs text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg inline-block">
                           Only {availableStock} left in stock
                         </div>
                       )}
 
-                      {/* Price & Quantity */}
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-2xl font-bold">₹{item.product.display_price}</div>
+                      {/* Price Section with MRP and Discount */}
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-2xl font-bold text-gray-900">
+                            ₹{item.product.display_price}
+                          </span>
+                          {priceInfo.hasDiscount && (
+                            <>
+                              <span className="text-lg font-bold text-gray-500 line-through">
+                                ₹{priceInfo.mrp}
+                              </span>
+                              <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">
+                                -{priceInfo.discountPercent}%
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
 
-                        {/* Quantity Controls */}
+                      {/* Quantity Controls */}
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
                           <button
                             onClick={() =>
@@ -203,14 +336,19 @@ const Cart = () => {
                             <FiPlus className="w-4 h-4" />
                           </button>
                         </div>
-                      </div>
 
-                      {/* Item Subtotal */}
-                      {item.quantity > 1 && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          Subtotal: ₹{(item.product.display_price * item.quantity).toFixed(2)}
-                        </div>
-                      )}
+                        {/* Item Subtotal */}
+                        {item.quantity > 1 && (
+                          <div className="text-sm text-gray-600">
+                            Subtotal: <span className="font-bold text-gray-900">₹{(item.product.display_price * item.quantity).toFixed(2)}</span>
+                            {priceInfo.hasDiscount && (
+                              <span className="ml-2 text-xs text-gray-500 line-through">
+                                ₹{(priceInfo.mrp * item.quantity).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Remove Button - Mobile */}
                       <button
@@ -225,15 +363,6 @@ const Cart = () => {
                 );
               })}
             </div>
-
-            {/* NEW: Variant Info Banner
-            {cart.some(item => item.size || item.color) && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Selected variants are reserved in your cart. Stock availability is checked at checkout.
-                </p>
-              </div>
-            )} */}
           </div>
 
           {/* Order Summary */}
@@ -242,15 +371,41 @@ const Cart = () => {
               <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
 
               <div className="space-y-4 mb-6">
+                {/* MRP Total (if applicable) */}
+                {calculateMRPTotals.hasMRPProducts && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>Total MRP</span>
+                    <span className="line-through">₹{calculateMRPTotals.totalMRP.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {/* Product Discount (MRP - Display Price) */}
+                {calculateMRPTotals.hasMRPProducts && calculateMRPTotals.productSavings > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Product Discount</span>
+                    <span className="font-bold">
+                      -₹{calculateMRPTotals.productSavings.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
                   <span className="font-bold text-black">₹{totals.subtotal.toFixed(2)}</span>
                 </div>
 
-                <div className="flex justify-between text-gray-600">
-                  <span>Discount (-20%)</span>
-                  <span className="font-bold text-red-500">-₹{(totals.subtotal * 0.2).toFixed(2)}</span>
-                </div>
+                {/* Coupon Discount Display */}
+                {appliedCoupon && appliedCoupon.discount_amount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="flex items-center gap-2">
+                      <FiTag className="w-4 h-4" />
+                      Coupon ({appliedCoupon.coupon.code})
+                    </span>
+                    <span className="font-bold">
+                      -₹{appliedCoupon.discount_amount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between text-gray-600">
                   <span>Delivery Fee</span>
@@ -279,32 +434,91 @@ const Cart = () => {
 
                 <hr className="border-gray-300" />
 
+                {/* Total Savings Summary (if any) */}
+                {calculateMRPTotals.totalSavings > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-green-700">Total Savings</span>
+                      <span className="text-lg font-bold text-green-700">
+                        ₹{calculateMRPTotals.totalSavings.toFixed(2)}
+                      </span>
+                    </div>
+                    {calculateMRPTotals.productSavings > 0 && appliedCoupon?.discount_amount > 0 && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Product discount: ₹{calculateMRPTotals.productSavings.toFixed(2)} +
+                        Coupon: ₹{appliedCoupon.discount_amount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-between text-xl">
                   <span className="font-bold">Total</span>
-                  <span className="font-bold">₹{totals.total.toFixed(2)}</span>
+                  <span className="font-bold">₹{getFinalTotal().toFixed(2)}</span>
                 </div>
 
-                {/* NEW: Item count with variants */}
                 <div className="text-sm text-gray-600">
                   {totals.itemCount} {totals.itemCount === 1 ? 'item' : 'items'} in cart
                 </div>
               </div>
 
-              {/* Promo Code */}
+              {/* Coupon Section */}
               <div className="mb-4">
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <FiTag className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Add promo code"
-                      className="w-full pl-12 pr-4 py-3 bg-gray-100 border-2 border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition"
-                    />
+                {appliedCoupon ? (
+                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <FiTag className="w-5 h-5" />
+                        <span className="font-bold">{appliedCoupon.coupon.code}</span>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-red-500 hover:text-red-700 transition"
+                        title="Remove coupon"
+                      >
+                        <FiX className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <p className="text-sm text-green-700 font-medium">
+                      {appliedCoupon.message}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {appliedCoupon.coupon.discount_display} discount applied
+                    </p>
                   </div>
-                  <button className="px-6 py-3 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition">
-                    Apply
-                  </button>
-                </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <FiTag className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          onKeyPress={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                          placeholder="Enter coupon code"
+                          className={`w-full pl-12 pr-4 py-3 bg-gray-100 border-2 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition ${couponError ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                            }`}
+                          disabled={isApplyingCoupon}
+                        />
+                      </div>
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={isApplyingCoupon || !couponCode.trim()}
+                        className="px-6 py-3 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {isApplyingCoupon ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          'Apply'
+                        )}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-xs text-red-600 mt-2 ml-4">{couponError}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button
