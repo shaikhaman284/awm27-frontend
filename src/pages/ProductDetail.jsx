@@ -51,6 +51,7 @@ const ProductDetail = () => {
   }, [product?.mrp, product?.display_price]);
 
   // Generate dynamic product schema with variants
+  // Generate dynamic product schema with variants
   const getProductSchema = () => {
     if (!product) return {};
 
@@ -65,16 +66,31 @@ const ProductDetail = () => {
         : "https://schema.org/OutOfStock";
     }
 
-    // CRITICAL FIX: Ensure image field is ALWAYS populated with valid URLs
-    // Google Merchant Listings requires at least one image
+    // CRITICAL FIX: Build proper image array with absolute URLs
     const productImages = [];
-    if (product.images && product.images.length > 0) {
-      productImages.push(...product.images);
-    } else if (product.main_image) {
-      productImages.push(product.main_image);
-    } else {
-      // Fallback to logo if no product images (should rarely happen)
-      productImages.push("https://awm27.shop/logo192.png");
+
+    // First, add all product images if available
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      product.images.forEach(img => {
+        if (img) {
+          // Ensure absolute URL
+          const imageUrl = img.startsWith('http') ? img : `https://awm27.shop${img}`;
+          productImages.push(imageUrl);
+        }
+      });
+    }
+
+    // If no images array but main_image exists, use it
+    if (productImages.length === 0 && product.main_image) {
+      const mainImageUrl = product.main_image.startsWith('http')
+        ? product.main_image
+        : `https://awm27.shop${product.main_image}`;
+      productImages.push(mainImageUrl);
+    }
+
+    // Fallback: If still no images, use a default placeholder
+    if (productImages.length === 0) {
+      productImages.push("https://awm27.shop/logo512.png");
     }
 
     const baseSchema = {
