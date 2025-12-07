@@ -139,6 +139,14 @@ const Home = () => {
     return (num || 0).toLocaleString();
   };
 
+  // Helper function to get shop rating
+  const getShopRating = (shop) => {
+    const averageRating = shop.average_rating ? parseFloat(shop.average_rating) : 0;
+    const reviewCount = shop.review_count || 0;
+
+    return { averageRating, reviewCount };
+  };
+
   return (
     <div className="min-h-screen bg-white">
 
@@ -248,7 +256,7 @@ const Home = () => {
 
               {/* Mobile Carousel - Shows below button on mobile, above stats */}
               {!loading && promotedShops.length > 0 && (
-                <div className="lg:hidden mb-8" style={{ height: '420px' }}>
+                <div className="lg:hidden mb-8" style={{ minHeight: '520px' }}>
                   <PromotedCarousel shops={promotedShops} />
                 </div>
               )}
@@ -300,7 +308,7 @@ const Home = () => {
 
             {/* Right Content - Carousel (Desktop Only) */}
             {!loading && promotedShops.length > 0 && (
-              <div className="hidden lg:block order-1 lg:order-2" style={{ height: '500px' }}>
+              <div className="hidden lg:block order-1 lg:order-2" style={{ minHeight: '520px' }}>
                 <PromotedCarousel shops={promotedShops} />
               </div>
             )}
@@ -343,46 +351,60 @@ const Home = () => {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-10">FEATURED SHOPS</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {shops.map((shop) => (
-                <Link
-                  key={shop.id}
-                  to={`/shop/${shop.id}`}
-                  className="group bg-white rounded-3xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
-                  aria-label={`View ${shop.shop_name} shop`}
-                >
-                  {shop.shop_image ? (
-                    <div className="relative w-full h-48 overflow-hidden">
-                      <img
-                        src={shop.shop_image}
-                        alt={`${shop.shop_name} storefront`}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
-                    </div>
-                  ) : (
-                    <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <FiShoppingBag className="w-16 h-16 text-gray-400" aria-hidden="true" />
-                    </div>
-                  )}
-                  <div className="p-5">
-                    <h3 className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-gray-600 transition">
-                      {shop.shop_name}
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-3">{shop.city}</p>
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <p className="text-sm font-semibold text-black">
-                        {shop.product_count} Products
-                      </p>
-                      <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
-                        <FiStar className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" aria-hidden="true" />
-                        <span className="text-xs font-semibold">4.5</span>
+              {shops.map((shop) => {
+                const { averageRating, reviewCount } = getShopRating(shop);
+
+                return (
+                  <Link
+                    key={shop.id}
+                    to={`/shop/${shop.id}`}
+                    className="group bg-white rounded-3xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300"
+                    aria-label={`View ${shop.shop_name} shop`}
+                  >
+                    {shop.shop_image ? (
+                      <div className="relative w-full h-48 overflow-hidden">
+                        <img
+                          src={shop.shop_image}
+                          alt={`${shop.shop_name} storefront`}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <FiShoppingBag className="w-16 h-16 text-gray-400" aria-hidden="true" />
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <h3 className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-gray-600 transition">
+                        {shop.shop_name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-3">{shop.city}</p>
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <p className="text-sm font-semibold text-black">
+                          {shop.product_count} Products
+                        </p>
+                        {averageRating > 0 ? (
+                          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
+                            <FiStar className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                            <span className="text-xs font-semibold">{averageRating.toFixed(1)}</span>
+                            {reviewCount > 0 && (
+                              <span className="text-xs text-gray-500">({reviewCount})</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
+                            <FiStar className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                            <span className="text-xs font-semibold text-gray-500">New</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>

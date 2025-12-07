@@ -8,7 +8,6 @@ const PromotedCarousel = ({ shops }) => {
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [startX, setStartX] = useState(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
     const intervalRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -67,27 +66,25 @@ const PromotedCarousel = ({ shops }) => {
     // Mouse/Touch drag handlers
     const handleMouseDown = (e) => {
         setIsDragging(true);
-        setStartX(e.pageX - containerRef.current.offsetLeft);
-        setScrollLeft(containerRef.current.scrollLeft);
+        setStartX(e.pageX);
     };
 
     const handleTouchStart = (e) => {
         setIsDragging(true);
-        setStartX(e.touches[0].pageX - containerRef.current.offsetLeft);
-        setScrollLeft(containerRef.current.scrollLeft);
+        setStartX(e.touches[0].pageX);
     };
 
     const handleMouseMove = (e) => {
         if (!isDragging) return;
         e.preventDefault();
-        const x = e.pageX - containerRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
+        const currentX = e.pageX;
+        const diff = startX - currentX;
 
-        if (Math.abs(walk) > 50) {
-            if (walk > 0) {
-                prevSlide();
-            } else {
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
                 nextSlide();
+            } else {
+                prevSlide();
             }
             setIsDragging(false);
         }
@@ -95,14 +92,14 @@ const PromotedCarousel = ({ shops }) => {
 
     const handleTouchMove = (e) => {
         if (!isDragging) return;
-        const x = e.touches[0].pageX - containerRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
+        const currentX = e.touches[0].pageX;
+        const diff = startX - currentX;
 
-        if (Math.abs(walk) > 50) {
-            if (walk > 0) {
-                prevSlide();
-            } else {
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
                 nextSlide();
+            } else {
+                prevSlide();
             }
             setIsDragging(false);
         }
@@ -135,6 +132,8 @@ const PromotedCarousel = ({ shops }) => {
         ];
     };
 
+    const visibleShops = getVisibleShops();
+
     return (
         <div className="relative w-full h-full">
             {/* Navigation Arrows */}
@@ -160,7 +159,8 @@ const PromotedCarousel = ({ shops }) => {
             {/* Carousel Container */}
             <div
                 ref={containerRef}
-                className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+                className="relative w-full flex items-center justify-center overflow-visible cursor-grab active:cursor-grabbing"
+                style={{ height: '450px' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -171,22 +171,22 @@ const PromotedCarousel = ({ shops }) => {
                 onWheel={handleWheel}
             >
                 <div className="relative w-full h-full flex items-center justify-center">
-                    {getVisibleShops().map(({ shop, index, position }) => {
+                    {visibleShops.map(({ shop, index, position }) => {
                         const isCenter = position === 'center';
                         const isLeft = position === 'left';
                         const isRight = position === 'right';
 
                         return (
                             <div
-                                key={`${shop.id}-${index}`}
+                                key={`${shop.id}-${index}-${position}`}
                                 className={`absolute transition-all duration-500 ease-out ${isDragging ? 'transition-none' : ''
                                     }`}
                                 style={{
-                                    width: isCenter ? '320px' : '240px',
-                                    height: isCenter ? '420px' : '340px',
-                                    transform: `translateX(${isLeft ? '-280px' : isRight ? '280px' : '0px'
+                                    width: isCenter ? '320px' : '260px',
+                                    height: isCenter ? '420px' : '360px',
+                                    transform: `translateX(${isLeft ? '-300px' : isRight ? '300px' : '0px'
                                         }) scale(${isCenter ? 1 : 0.85})`,
-                                    opacity: isCenter ? 1 : 0.4,
+                                    opacity: isCenter ? 1 : 0.5,
                                     filter: isCenter ? 'blur(0px)' : 'blur(2px)',
                                     zIndex: isCenter ? 20 : 10,
                                 }}
