@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiShoppingBag, FiTruck, FiShield, FiStar } from 'react-icons/fi';
 import apiService from '../services/api';
 import ProductCard from '../components/products/ProductCard';
+import PromotedCarousel from '../components/home/PromotedCarousel';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
 
@@ -10,6 +11,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [shops, setShops] = useState([]);
+  const [promotedShops, setPromotedShops] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -49,6 +51,15 @@ const Home = () => {
       // Load shops
       const shopsRes = await apiService.getApprovedShops('Amravati');
       setShops(shopsRes.data.slice(0, 4));
+
+      // Load promoted shops for carousel
+      try {
+        const promotedRes = await apiService.getPromotedShops();
+        setPromotedShops(promotedRes.data || []);
+      } catch (promotedError) {
+        console.warn('Promoted shops not available:', promotedError);
+        setPromotedShops([]);
+      }
 
       // Load featured products
       const productsRes = await apiService.getProducts({
@@ -194,87 +205,105 @@ const Home = () => {
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-16 md:py-24">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
-              FIND CLOTHES<br />
-              THAT MATCHES<br />
-              YOUR STYLE
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl">
-              Browse through our diverse range of meticulously crafted garments from trusted Amravati stores, designed to bring out your individuality.
-            </p>
+        <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex gap-3 max-w-xl mb-10">
-              <div className="flex-1 relative">
-                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" aria-hidden="true" />
-                <input
-                  type="text"
-                  name="search"
-                  placeholder="Search for shirts, jeans, sarees..."
-                  className="w-full pl-12 pr-4 py-4 rounded-full border-2 border-gray-200 text-gray-800 focus:outline-none focus:border-black transition"
-                  aria-label="Search for products"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-8 py-4 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition whitespace-nowrap"
+            {/* Left Content */}
+            <div className="order-2 lg:order-1">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-6">
+                FIND CLOTHES<br />
+                THAT MATCHES<br />
+                YOUR STYLE
+              </h1>
+              <p className="text-base md:text-lg lg:text-xl text-gray-600 mb-6 lg:mb-8 max-w-2xl">
+                Browse through our diverse range of meticulously crafted garments from trusted Amravati stores, designed to bring out your individuality.
+              </p>
+
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="flex gap-3 max-w-xl mb-8 lg:mb-10">
+                <div className="flex-1 relative">
+                  <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="search"
+                    placeholder="Search for shirts, jeans, sarees..."
+                    className="w-full pl-12 pr-4 py-3.5 md:py-4 rounded-full border-2 border-gray-200 text-gray-800 focus:outline-none focus:border-black transition"
+                    aria-label="Search for products"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-6 md:px-8 py-3.5 md:py-4 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition whitespace-nowrap"
+                >
+                  Search
+                </button>
+              </form>
+
+              <Link
+                to="/products"
+                className="inline-block px-12 md:px-16 py-3.5 md:py-4 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition text-base md:text-lg mb-8 lg:mb-10"
               >
-                Search
-              </button>
-            </form>
+                Shop Now
+              </Link>
 
-            <Link
-              to="/products"
-              className="inline-block px-16 py-4 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition text-lg"
-            >
-              Shop Now
-            </Link>
+              {/* Mobile Carousel - Shows below button on mobile, above stats */}
+              {!loading && promotedShops.length > 0 && (
+                <div className="lg:hidden mb-8" style={{ height: '420px' }}>
+                  <PromotedCarousel shops={promotedShops} />
+                </div>
+              )}
 
-            {/* Dynamic Stats - 4 columns - PERFORMANCE FIX: Batch DOM operations */}
-            <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 max-w-4xl">
-              <div>
-                <div className="text-2xl md:text-3xl font-bold">
-                  {loading ? (
-                    <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
-                  ) : (
-                    `${formatNumber(stats.totalShops)}+`
-                  )}
+              {/* Dynamic Stats - 4 columns */}
+              <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl">
+                <div>
+                  <div className="text-2xl md:text-3xl font-bold">
+                    {loading ? (
+                      <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
+                    ) : (
+                      `${formatNumber(stats.totalShops)}+`
+                    )}
+                  </div>
+                  <div className="text-gray-600 text-xs md:text-sm">Local Stores</div>
                 </div>
-                <div className="text-gray-600 text-xs md:text-sm">Local Stores</div>
-              </div>
-              <div className="border-l-2 border-gray-300 pl-4">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {loading ? (
-                    <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
-                  ) : (
-                    `${formatNumber(stats.totalProducts)}+`
-                  )}
+                <div className="border-l-2 border-gray-300 pl-4">
+                  <div className="text-2xl md:text-3xl font-bold">
+                    {loading ? (
+                      <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                    ) : (
+                      `${formatNumber(stats.totalProducts)}+`
+                    )}
+                  </div>
+                  <div className="text-gray-600 text-xs md:text-sm">Products</div>
                 </div>
-                <div className="text-gray-600 text-xs md:text-sm">Products</div>
-              </div>
-              <div className="border-l-2 border-gray-300 pl-4">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {loading ? (
-                    <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
-                  ) : (
-                    `${formatNumber(stats.totalOrders)}+`
-                  )}
+                <div className="border-l-2 border-gray-300 pl-4">
+                  <div className="text-2xl md:text-3xl font-bold">
+                    {loading ? (
+                      <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                    ) : (
+                      `${formatNumber(stats.totalOrders)}+`
+                    )}
+                  </div>
+                  <div className="text-gray-600 text-xs md:text-sm">Customers</div>
                 </div>
-                <div className="text-gray-600 text-xs md:text-sm">Customers</div>
-              </div>
-              <div className="border-l-2 border-gray-300 pl-4">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {loading ? (
-                    <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
-                  ) : (
-                    `${formatNumber(stats.totalVisitors)}+`
-                  )}
+                <div className="border-l-2 border-gray-300 pl-4">
+                  <div className="text-2xl md:text-3xl font-bold">
+                    {loading ? (
+                      <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                    ) : (
+                      `${formatNumber(stats.totalVisitors)}+`
+                    )}
+                  </div>
+                  <div className="text-gray-600 text-xs md:text-sm">Visitors</div>
                 </div>
-                <div className="text-gray-600 text-xs md:text-sm">Visitors</div>
               </div>
             </div>
+
+            {/* Right Content - Carousel (Desktop Only) */}
+            {!loading && promotedShops.length > 0 && (
+              <div className="hidden lg:block order-1 lg:order-2" style={{ height: '500px' }}>
+                <PromotedCarousel shops={promotedShops} />
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -308,7 +337,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Shops - PERFORMANCE FIX: Added lazy loading */}
+      {/* Featured Shops */}
       {!loading && shops.length > 0 && (
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
@@ -375,8 +404,10 @@ const Home = () => {
 
             {/* Horizontal Scrollable Container */}
             <div className="relative">
-              <div className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div
+                className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {categories.map((category, index) => (
                   <Link
                     key={`category-${category.id}-${index}`}
@@ -454,6 +485,7 @@ const Home = () => {
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-black"></div>
         </div>
       )}
+
     </div>
   );
 };

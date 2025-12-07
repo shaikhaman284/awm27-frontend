@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 import toast from 'react-hot-toast';
+import { setErrorContext, generateErrorId } from '../utils/errorUtils';
 
 
 // Create axios instance
@@ -34,25 +35,63 @@ api.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response;
 
-
       // Handle specific error statuses
       if (status === 401) {
-        // Unauthorized - clear token and redirect to login
+        // Unauthorized - clear token and redirect to unauthorized page
         localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.USER_DATA);
         toast.error('Session expired. Please login again.');
-        window.location.href = '/login';
+
+        // Small delay to allow toast to show
+        setTimeout(() => {
+          window.location.href = '/unauthorized';
+        }, 500);
       } else if (status === 403) {
+        // Forbidden - redirect to unauthorized page
+        const errorId = generateErrorId();
+        setErrorContext({
+          errorId,
+          message: data.error || 'Access forbidden',
+          statusCode: 403,
+        });
         toast.error(data.error || 'Access forbidden');
+
+        setTimeout(() => {
+          window.location.href = '/unauthorized';
+        }, 500);
       } else if (status === 404) {
+        // Not Found - show toast only (page-level handling)
         toast.error(data.error || 'Resource not found');
-      } else if (status === 500) {
+      } else if (status >= 500) {
+        // Server Error - redirect to server error page
+        const errorId = generateErrorId();
+        setErrorContext({
+          errorId,
+          message: data.error || 'Server error. Please try again later.',
+          statusCode: status,
+        });
         toast.error('Server error. Please try again later.');
+
+        setTimeout(() => {
+          window.location.href = '/error/server';
+        }, 500);
       } else {
+        // Other errors - show toast
         toast.error(data.error || 'Something went wrong');
       }
     } else if (error.request) {
+      // Network error - redirect to network error page
+      const errorId = generateErrorId();
+      setErrorContext({
+        errorId,
+        message: 'Network error. Please check your connection.',
+        type: 'network',
+      });
       toast.error('Network error. Please check your connection.');
+
+      setTimeout(() => {
+        window.location.href = '/error/network';
+      }, 500);
     }
 
 
@@ -84,6 +123,7 @@ const apiService = {
   // Shops
   getApprovedShops: (city) => api.get('/shops/approved/', { params: { city } }),
   getShopDetail: (shopId) => api.get(`/shops/${shopId}/`),
+  getPromotedShops: () => api.get('/shops/promoted/'), // NEW
 
 
   // Products

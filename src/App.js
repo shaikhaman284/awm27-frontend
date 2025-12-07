@@ -7,6 +7,7 @@ import { CartProvider } from './context/CartContext';
 import Layout from './components/common/Layout';
 import ScrollToTop from './utils/ScrollToTop';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // PERFORMANCE OPTIMIZATION: Lazy load all pages for code splitting
 // This reduces initial bundle size significantly
@@ -22,6 +23,13 @@ const OrderDetail = lazy(() => import(/* webpackChunkName: "order-detail" */ './
 const WriteReview = lazy(() => import(/* webpackChunkName: "write-review" */ './pages/WriteReview'));
 const Profile = lazy(() => import(/* webpackChunkName: "profile" */ './pages/Profile'));
 const Login = lazy(() => import(/* webpackChunkName: "login" */ './pages/Login'));
+
+// ERROR PAGES: Lazy load error pages for code splitting
+const NotFound = lazy(() => import(/* webpackChunkName: "not-found" */ './pages/NotFound'));
+const ServerError = lazy(() => import(/* webpackChunkName: "server-error" */ './pages/ServerError'));
+const Unauthorized = lazy(() => import(/* webpackChunkName: "unauthorized" */ './pages/Unauthorized'));
+const NetworkError = lazy(() => import(/* webpackChunkName: "network-error" */ './pages/NetworkError'));
+const GeneralError = lazy(() => import(/* webpackChunkName: "general-error" */ './pages/GeneralError'));
 
 // PERFORMANCE: Memoized Protected Route Component to prevent unnecessary re-renders
 const ProtectedRoute = React.memo(({ children }) => {
@@ -48,125 +56,133 @@ function App() {
     <HelmetProvider>
       <BrowserRouter>
         <ScrollToTop />
-        <AuthProvider>
-          <CartProvider>
-            <Layout>
-              <SuspenseBoundary>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/products" element={<Products />} />
-                  <Route path="/products/:id" element={<ProductDetail />} />
-                  <Route path="/shop/:id" element={<ShopDetail />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/login" element={<Login />} />
+        <ErrorBoundary>
+          <AuthProvider>
+            <CartProvider>
+              <Layout>
+                <SuspenseBoundary>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/products/:id" element={<ProductDetail />} />
+                    <Route path="/shop/:id" element={<ShopDetail />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/login" element={<Login />} />
 
-                  {/* Protected Routes - Each wrapped individually for better code splitting */}
-                  <Route
-                    path="/checkout"
-                    element={
-                      <ProtectedRoute>
-                        <SuspenseBoundary>
-                          <Checkout />
-                        </SuspenseBoundary>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/orders"
-                    element={
-                      <ProtectedRoute>
-                        <SuspenseBoundary>
-                          <Orders />
-                        </SuspenseBoundary>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/orders/:orderNumber"
-                    element={
-                      <ProtectedRoute>
-                        <SuspenseBoundary>
-                          <OrderDetail />
-                        </SuspenseBoundary>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/order-success/:orderNumber"
-                    element={
-                      <ProtectedRoute>
-                        <SuspenseBoundary>
-                          <OrderSuccess />
-                        </SuspenseBoundary>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <SuspenseBoundary>
-                          <Profile />
-                        </SuspenseBoundary>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/write-review"
-                    element={
-                      <ProtectedRoute>
-                        <SuspenseBoundary>
-                          <WriteReview />
-                        </SuspenseBoundary>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Protected Routes - Each wrapped individually for better code splitting */}
+                    <Route
+                      path="/checkout"
+                      element={
+                        <ProtectedRoute>
+                          <SuspenseBoundary>
+                            <Checkout />
+                          </SuspenseBoundary>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/orders"
+                      element={
+                        <ProtectedRoute>
+                          <SuspenseBoundary>
+                            <Orders />
+                          </SuspenseBoundary>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/orders/:orderNumber"
+                      element={
+                        <ProtectedRoute>
+                          <SuspenseBoundary>
+                            <OrderDetail />
+                          </SuspenseBoundary>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/order-success/:orderNumber"
+                      element={
+                        <ProtectedRoute>
+                          <SuspenseBoundary>
+                            <OrderSuccess />
+                          </SuspenseBoundary>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <SuspenseBoundary>
+                            <Profile />
+                          </SuspenseBoundary>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/write-review"
+                      element={
+                        <ProtectedRoute>
+                          <SuspenseBoundary>
+                            <WriteReview />
+                          </SuspenseBoundary>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* 404 Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </SuspenseBoundary>
-            </Layout>
+                    {/* Error Pages */}
+                    <Route path="/error/server" element={<ServerError />} />
+                    <Route path="/error/network" element={<NetworkError />} />
+                    <Route path="/error/general" element={<GeneralError />} />
+                    <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Toast Notifications - Optimized configuration */}
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: '#333',
-                  color: '#fff',
-                  fontWeight: '600',
-                  borderRadius: '8px',
-                  padding: '12px 20px',
-                },
-                success: {
-                  iconTheme: {
-                    primary: '#10b981',
-                    secondary: '#fff',
+                    {/* 404 Fallback - Must be last */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </SuspenseBoundary>
+              </Layout>
+
+              {/* Toast Notifications - Optimized configuration */}
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: '#333',
+                    color: '#fff',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    padding: '12px 20px',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
+                  success: {
+                    iconTheme: {
+                      primary: '#10b981',
+                      secondary: '#fff',
+                    },
                   },
-                },
-                loading: {
-                  iconTheme: {
-                    primary: '#3b82f6',
-                    secondary: '#fff',
+                  error: {
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: '#fff',
+                    },
                   },
-                },
-              }}
-              containerStyle={{
-                top: 20,
-              }}
-              gutter={8}
-            />
-          </CartProvider>
-        </AuthProvider>
+                  loading: {
+                    iconTheme: {
+                      primary: '#3b82f6',
+                      secondary: '#fff',
+                    },
+                  },
+                }}
+                containerStyle={{
+                  top: 20,
+                }}
+                gutter={8}
+              />
+            </CartProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </BrowserRouter>
     </HelmetProvider>
   );
