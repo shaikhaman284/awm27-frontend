@@ -1,11 +1,26 @@
 import { STORAGE_KEYS } from '../utils/constants';
 import apiService from './api';
-import { auth } from '../config/firebase';
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  signOut
-} from 'firebase/auth';
+
+// PERFORMANCE: Lazy load Firebase - only when needed for login
+// This saves ~90 KB from initial bundle
+let auth = null;
+let RecaptchaVerifier = null;
+let signInWithPhoneNumber = null;
+let signOut = null;
+
+const loadFirebaseAuth = async () => {
+  if (!auth) {
+    const [firebaseModule, authModule] = await Promise.all([
+      import('../config/firebase'),
+      import('firebase/auth')
+    ]);
+    auth = firebaseModule.auth;
+    RecaptchaVerifier = authModule.RecaptchaVerifier;
+    signInWithPhoneNumber = authModule.signInWithPhoneNumber;
+    signOut = authModule.signOut;
+  }
+  return { auth, RecaptchaVerifier, signInWithPhoneNumber, signOut };
+};
 
 const authService = {
   // Get auth token from localStorage
@@ -35,9 +50,10 @@ const authService = {
   },
 
   // Setup reCAPTCHA v2 (visible)
-  setupRecaptcha: (elementId) => {
+  setupRecaptcha: async (elementId) => {
+    const { auth, RecaptchaVerifier: ReCaptcha } = await loadFirebaseAuth();
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
+      window.recaptchaVerifier = new ReCaptcha(auth, elementId, {
         size: 'normal', // Visible reCAPTCHA
         callback: (response) => {
           console.log('reCAPTCHA verified successfully');
@@ -61,16 +77,18 @@ const authService = {
   // Send OTP
   sendOTP: async (phoneNumber) => {
     try {
+      const { auth, signInWithPhoneNumber: sendOTP } = await loadFirebaseAuth();
+
       // Format phone number with country code
       const formattedPhone = phoneNumber.startsWith('+91')
         ? phoneNumber
         : `+91${phoneNumber}`;
 
       // Setup reCAPTCHA
-      const recaptchaVerifier = authService.setupRecaptcha('recaptcha-container');
+      const recaptchaVerifier = await authService.setupRecaptcha('recaptcha-container');
 
       // Send OTP with Firebase
-      const confirmationResult = await signInWithPhoneNumber(
+      const confirmationResult = await sendOTP(
         auth,
         formattedPhone,
         recaptchaVerifier
@@ -195,7 +213,11 @@ const authService = {
   logout: async () => {
     try {
       await apiService.logout();
-      await signOut(auth);
+      // Only load Firebase if it was previously loaded
+      if (auth) {
+        const { auth: firebaseAuth, signOut: firebaseSignOut } = await loadFirebaseAuth();
+        await firebaseSignOut(firebaseAuth);
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

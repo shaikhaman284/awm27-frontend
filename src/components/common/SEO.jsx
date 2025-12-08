@@ -1,5 +1,7 @@
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect, useState } from 'react';
+
+// PERFORMANCE: Lazy load Helmet to reduce initial bundle
+let Helmet = null;
 
 const SEO = ({
     title = 'Amravati Wears Market',
@@ -11,8 +13,26 @@ const SEO = ({
     noindex = false,
     structuredData = null,
 }) => {
+    const [isHelmetLoaded, setIsHelmetLoaded] = useState(false);
     const siteTitle = 'Amravati Wears Market';
     const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+
+    useEffect(() => {
+        // Load Helmet after component mounts (non-blocking)
+        if (!Helmet) {
+            import('react-helmet-async').then((module) => {
+                Helmet = module.Helmet;
+                setIsHelmetLoaded(true);
+            });
+        } else {
+            setIsHelmetLoaded(true);
+        }
+    }, []);
+
+    // Return null until Helmet is loaded (prevents blocking)
+    if (!isHelmetLoaded || !Helmet) {
+        return null;
+    }
 
     return (
         <Helmet>
