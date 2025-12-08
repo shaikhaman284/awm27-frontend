@@ -11,6 +11,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* PERFORMANCE: CSS Containment for product cards */
+.product-card-image {
+  contain: layout style paint;
+  /* Isolate layout calculations */
+}
+
+/* PERFORMANCE: Optimize animations - use GPU acceleration */
+@layer utilities {
+  .transform-gpu {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Remove will-change after animation completes */
+  .transform-gpu:not(:hover) {
+    will-change: auto;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -28,4 +47,16 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* PERFORMANCE: Reduce paint on scroll */
+* {
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scrolling on iOS */
+}
+
+/* PERFORMANCE: Optimize image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }

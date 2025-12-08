@@ -10,7 +10,89 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout to prevent hanging requests
 });
+
+// PERFORMANCE: In-memory cache for frequently accessed data
+const cache = new Map();
+const pendingRequests = new Map(); // Request deduplication
+
+// Cache configuration
+const CACHE_TTL = {
+  categories: 5 * 60 * 1000, // 5 minutes
+  shops: 2 * 60 * 1000, // 2 minutes
+  products: 1 * 60 * 1000, // 1 minute
+  default: 30 * 1000, // 30 seconds
+};
+
+/**
+ * Get cached data if available and not expired
+ * @param {string} key - Cache key
+ * @returns {any|null} - Cached data or null
+ */
+const getCachedData = (key) => {
+  const cached = cache.get(key);
+  if (!cached) return null;
+
+  const isExpired = Date.now() - cached.timestamp > cached.ttl;
+  if (isExpired) {
+    cache.delete(key);
+    return null;
+  }
+
+  return cached.data;
+};
+
+/**
+ * Set data in cache with TTL
+ * @param {string} key - Cache key
+ * @param {any} data - Data to cache
+ * @param {number} ttl - Time to live in milliseconds
+ */
+const setCachedData = (key, data, ttl) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl,
+  });
+};
+
+/**
+ * Create a cacheable request wrapper
+ * @param {Function} requestFn - Axios request function
+ * @param {string} cacheKey - Cache key
+ * @param {number} ttl - Cache TTL
+ */
+const cacheableRequest = async (requestFn, cacheKey, ttl) => {
+  // Check cache first
+  const cachedData = getCachedData(cacheKey);
+  if (cachedData) {
+    return { data: cachedData };
+  }
+
+  // Check if request is already pending (deduplication)
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey);
+  }
+
+  // Make request
+  const requestPromise = requestFn()
+    .then((response) => {
+      // Cache the response
+      setCachedData(cacheKey, response.data, ttl);
+      pendingRequests.delete(cacheKey);
+      return response;
+    })
+    .catch((error) => {
+      pendingRequests.delete(cacheKey);
+      throw error;
+    });
+
+  // Store pending request
+  pendingRequests.set(cacheKey, requestPromise);
+
+  return requestPromise;
+};
 
 
 // Request interceptor - Add auth token
@@ -116,14 +198,26 @@ const apiService = {
   logout: () => api.post('/auth/logout/'),
 
 
-  // Categories
-  getCategories: () => api.get('/shops/categories/'),
+  // Categories (with caching)
+  getCategories: () => cacheableRequest(
+    () => api.get('/shops/categories/'),
+    'categories',
+    CACHE_TTL.categories
+  ),
 
 
-  // Shops
-  getApprovedShops: (city) => api.get('/shops/approved/', { params: { city } }),
+  // Shops (with caching)
+  getApprovedShops: (city) => cacheableRequest(
+    () => api.get('/shops/approved/', { params: { city } }),
+    `shops_${city}`,
+    CACHE_TTL.shops
+  ),
   getShopDetail: (shopId) => api.get(`/shops/${shopId}/`),
-  getPromotedShops: () => api.get('/shops/promoted/'), // NEW
+  getPromotedShops: () => cacheableRequest(
+    () => api.get('/shops/promoted/'),
+    'promoted_shops',
+    CACHE_TTL.shops
+  ),
 
 
   // Products

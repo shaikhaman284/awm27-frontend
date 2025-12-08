@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FiStar, FiPackage } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
+import ImageOptimizer from '../common/ImageOptimizer';
 
 // PERFORMANCE: Memoize the entire component to prevent unnecessary re-renders
 const ProductCard = React.memo(({ product }) => {
@@ -111,18 +112,16 @@ const ProductCard = React.memo(({ product }) => {
   return (
     <Link to={`/products/${product.id}`} className="group block">
       {/* Image Container */}
-      <div className="relative bg-gray-100 rounded-3xl overflow-hidden mb-3">
+      <div className="relative bg-gray-100 rounded-3xl overflow-hidden mb-3 product-card-image">
         <div className="aspect-square">
           {product.main_image ? (
-            <img
+            <ImageOptimizer
               src={product.main_image}
               alt={product.name}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              // PERFORMANCE: Add explicit dimensions to prevent layout shift
-              width="400"
-              height="400"
+              width={400}
+              height={400}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="w-full h-full group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
