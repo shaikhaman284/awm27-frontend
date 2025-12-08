@@ -14,7 +14,6 @@ const Home = () => {
   const [promotedShops, setPromotedShops] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(false);
 
   // Performance: Use ref to batch DOM reads and avoid forced reflow
   const statsRef = useRef(null);
@@ -29,12 +28,6 @@ const Home = () => {
 
   useEffect(() => {
     loadHomeData();
-
-    const hasVisited = localStorage.getItem('has_visited');
-    if (!hasVisited) {
-      setShowWelcome(true);
-      localStorage.setItem('has_visited', 'true');
-    }
   }, []);
 
   const loadHomeData = async () => {
@@ -61,9 +54,9 @@ const Home = () => {
         setPromotedShops([]);
       }
 
-      // Load featured products
+      // Load featured products - REDUCED TO 4 FOR PERFORMANCE
       const productsRes = await apiService.getProducts({
-        page_size: 8,
+        page_size: 4,
         sort: 'newest'
       });
       setFeaturedProducts(productsRes.data.results || []);
@@ -157,59 +150,8 @@ const Home = () => {
         url="https://awm27.shop"
         image="https://awm27.shop/og-image.jpg"
         type="website"
-        structuredData={{
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "Amravati Wears Market",
-          "url": "https://awm27.shop",
-          "description": "Amravati's first local cloth marketplace connecting customers with trusted local clothing stores",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://awm27.shop/products?search={search_term_string}",
-            "query-input": "required name=search_term_string"
-          },
-          "publisher": {
-            "@type": "Organization",
-            "@id": "https://awm27.shop/#organization",
-            "name": "Amravati Wears Market",
-            "url": "https://awm27.shop",
-            "logo": "https://awm27.shop/logo.png",
-            "address": {
-              "@type": "PostalAddress",
-              "addressLocality": "Amravati",
-              "addressRegion": "Maharashtra",
-              "addressCountry": "IN"
-            },
-            "areaServed": {
-              "@type": "City",
-              "name": "Amravati"
-            }
-          }
-        }}
+        structuredData={null}
       />
-
-      {/* Welcome Popup */}
-      {showWelcome && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
-            <h2 className="text-3xl font-bold mb-4">Welcome! 🎉</h2>
-            <p className="text-gray-600 mb-4">
-              Discover Amravati's first local cloth marketplace. Shop from your favorite local stores with home delivery.
-            </p>
-            <ul className="text-sm text-gray-600 mb-6 space-y-2">
-              <li>✓ Cash on Delivery available</li>
-              <li>✓ Free COD on orders ≥ ₹500</li>
-              <li>✓ Support local businesses</li>
-            </ul>
-            <button
-              onClick={() => setShowWelcome(false)}
-              className="w-full bg-black text-white py-3 rounded-full hover:bg-gray-800 transition font-medium"
-            >
-              Start Shopping
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-50 to-gray-100">

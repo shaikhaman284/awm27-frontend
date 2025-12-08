@@ -13,6 +13,8 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -65,34 +67,16 @@ const Products = () => {
 
   const getPageDescription = () => {
     if (filters.search) {
-      return `Search results for "${filters.search}". Browse ${products.length}+ products from local Amravati stores. Cash on Delivery available. Free COD on orders ≥ ₹500.`;
+      return `Search results for "${filters.search}". Browse ${totalProducts}+ products from local Amravati stores. Cash on Delivery available. Free COD on orders ≥ ₹500.`;
     }
 
     if (filters.category) {
       const category = categories.find(c => String(c.id) === filters.category);
       const catName = category?.name || 'products';
-      return `Shop ${catName} online from trusted Amravati stores. Wide collection with Cash on Delivery. ${products.length}+ items available. Free COD on orders ≥ ₹500.`;
+      return `Shop ${catName} online from trusted Amravati stores. Wide collection with Cash on Delivery. ${totalProducts}+ items available. Free COD on orders ≥ ₹500.`;
     }
 
-    return `Browse ${products.length}+ clothing products from local Amravati stores. Men's, women's, kids wear with Cash on Delivery. Free COD on orders ≥ ₹500. Shop now!`;
-  };
-
-  // Helper function to get product image URL
-  const getProductImageUrl = (product) => {
-    // Priority: main_image > images[0] > fallback
-    if (product.main_image) {
-      return product.main_image.startsWith('http')
-        ? product.main_image
-        : `https://awm27.shop${product.main_image}`;
-    }
-    if (product.images && product.images.length > 0) {
-      const firstImage = product.images[0];
-      return firstImage.startsWith('http')
-        ? firstImage
-        : `https://awm27.shop${firstImage}`;
-    }
-    // Fallback to a default product image
-    return 'https://awm27.shop/static/images/default-product.jpg';
+    return `Browse ${totalProducts}+ clothing products from local Amravati stores. Men's, women's, kids wear with Cash on Delivery. Free COD on orders ≥ ₹500. Shop now!`;
   };
 
   useEffect(() => {
@@ -116,8 +100,15 @@ const Products = () => {
     try {
       setLoading(true);
       const params = Object.fromEntries(searchParams);
+
+      // Add pagination - 12 products per page for performance
+      params.page_size = 12;
+      params.page = searchParams.get('page') || 1;
+
       const response = await apiService.getProducts(params);
       setProducts(response.data.results || []);
+      setTotalProducts(response.data.count || 0);
+      setCurrentPage(parseInt(params.page));
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Failed to load products');
@@ -134,7 +125,16 @@ const Products = () => {
     Object.entries(newFilters).forEach(([k, v]) => {
       if (v) params.set(k, v);
     });
+    // Reset to page 1 when filters change
+    params.set('page', '1');
     setSearchParams(params);
+  };
+
+  const handlePageChange = (page) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', page);
+    setSearchParams(params);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePriceRangeApply = () => {
@@ -157,6 +157,29 @@ const Products = () => {
 
   const activeFilterCount = Object.values(filters).filter(v => v && v !== 'newest').length;
 
+  // Calculate pagination
+  const totalPages = Math.ceil(totalProducts / 12);
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage, '...', totalPages);
+      }
+    }
+
+    return pages;
+  };
+
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
 
@@ -166,56 +189,7 @@ const Products = () => {
         keywords="buy clothes online Amravati, fashion shopping, men clothing, women clothing, kids wear, ethnic wear, casual wear, formal wear, online shopping COD"
         url={`https://awm27.shop/products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
         type="website"
-        structuredData={{
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          "name": getPageTitle(),
-          "description": getPageDescription(),
-          "url": `https://awm27.shop/products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`,
-          "mainEntity": {
-            "@type": "ItemList",
-            "numberOfItems": products.length,
-            "itemListElement": products.slice(0, 10).map((product, index) => ({
-              "@type": "ListItem",
-              "position": index + 1,
-              "item": {
-                "@type": "Product",
-                "@id": `https://awm27.shop/products/${product.id}`,
-                "name": product.name,
-                "image": getProductImageUrl(product),
-                "description": product.description || product.name,
-                "url": `https://awm27.shop/products/${product.id}`,
-                "offers": {
-                  "@type": "Offer",
-                  "price": product.display_price || product.price,
-                  "priceCurrency": "INR",
-                  "availability": product.stock_quantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-                  "seller": {
-                    "@type": "Organization",
-                    "name": product.shop_name || "Amravati Wears Market"
-                  }
-                }
-              }
-            }))
-          },
-          "breadcrumb": {
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "https://awm27.shop"
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Shop",
-                "item": "https://awm27.shop/products"
-              }
-            ]
-          }
-        }}
+        structuredData={null}
       />
 
       {/* Breadcrumb */}
@@ -384,7 +358,7 @@ const Products = () => {
                   onClick={() => setShowFilters(false)}
                   className="w-full py-4 bg-black text-white rounded-full hover:bg-gray-800 transition font-medium"
                 >
-                  Show {products.length} Products
+                  Show {totalProducts} Products
                 </button>
               </div>
             </div>
@@ -395,9 +369,11 @@ const Products = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold mb-1">Casual</h1>
+                <h1 className="text-2xl md:text-3xl font-bold mb-1">
+                  {filters.category ? categories.find(c => String(c.id) === filters.category)?.name || 'Products' : 'All Products'}
+                </h1>
                 <p className="text-gray-600 text-sm">
-                  {loading ? 'Loading...' : `Showing 1-${products.length} of ${products.length} Products`}
+                  {loading ? 'Loading...' : `Showing ${((currentPage - 1) * 12) + 1}-${Math.min(currentPage * 12, totalProducts)} of ${totalProducts} Products`}
                 </p>
               </div>
 
@@ -448,61 +424,85 @@ const Products = () => {
                 </div>
 
                 {/* Responsive Pagination */}
-                <div className="mt-12 mb-8">
-                  <hr className="border-gray-200 mb-8" />
+                {totalPages > 1 && (
+                  <div className="mt-12 mb-8">
+                    <hr className="border-gray-200 mb-8" />
 
-                  {/* Desktop Pagination */}
-                  <div className="hidden md:flex items-center justify-between">
-                    <button className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium flex items-center gap-2">
-                      <FiChevronLeft className="w-4 h-4" />
-                      Previous
-                    </button>
-                    <div className="flex gap-2">
-                      {[1, 2, 3, '...', 8, 9, 10].map((page, idx) => (
-                        <button
-                          key={idx}
-                          className={`w-10 h-10 rounded-lg font-medium transition ${page === 1
-                            ? 'bg-gray-100 text-black'
-                            : 'hover:bg-gray-50 text-gray-600'
-                            }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
+                    {/* Desktop Pagination */}
+                    <div className="hidden md:flex items-center justify-between">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FiChevronLeft className="w-4 h-4" />
+                        Previous
+                      </button>
+                      <div className="flex gap-2">
+                        {getPageNumbers().map((page, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => typeof page === 'number' && handlePageChange(page)}
+                            disabled={page === '...'}
+                            className={`w-10 h-10 rounded-lg font-medium transition ${page === currentPage
+                                ? 'bg-black text-white'
+                                : page === '...'
+                                  ? 'text-gray-400 cursor-default'
+                                  : 'hover:bg-gray-50 text-gray-600'
+                              }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                        <FiChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium flex items-center gap-2">
-                      Next
-                      <FiChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
 
-                  {/* Mobile Pagination */}
-                  <div className="flex md:hidden items-center justify-between gap-2">
-                    <button className="px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm flex items-center gap-1 flex-1 justify-center">
-                      <FiChevronLeft className="w-4 h-4" />
-                      Prev
-                    </button>
-                    <div className="flex gap-1.5">
-                      {[1, 2, 3, '...', 10].map((page, idx) => (
-                        <button
-                          key={idx}
-                          className={`w-9 h-9 rounded-lg font-medium transition text-sm ${page === 1
-                            ? 'bg-gray-100 text-black'
-                            : page === '...'
-                              ? 'text-gray-400 cursor-default'
-                              : 'hover:bg-gray-50 text-gray-600'
-                            }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
+                    {/* Mobile Pagination */}
+                    <div className="flex md:hidden items-center justify-between gap-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm flex items-center gap-1 flex-1 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FiChevronLeft className="w-4 h-4" />
+                        Prev
+                      </button>
+                      <div className="flex gap-1.5">
+                        {getPageNumbers().slice(0, 5).map((page, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => typeof page === 'number' && handlePageChange(page)}
+                            disabled={page === '...'}
+                            className={`w-9 h-9 rounded-lg font-medium transition text-sm ${page === currentPage
+                                ? 'bg-black text-white'
+                                : page === '...'
+                                  ? 'text-gray-400 cursor-default'
+                                  : 'hover:bg-gray-50 text-gray-600'
+                              }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm flex items-center gap-1 flex-1 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                        <FiChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button className="px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm flex items-center gap-1 flex-1 justify-center">
-                      Next
-                      <FiChevronRight className="w-4 h-4" />
-                    </button>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <div className="text-center py-32">
