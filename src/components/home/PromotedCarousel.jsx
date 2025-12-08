@@ -200,7 +200,10 @@ const PromotedCarousel = ({ shops }) => {
                                                 src={shop.shop_image}
                                                 alt={shop.shop_name}
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                loading="lazy"
+                                                loading={isCenter ? "eager" : "lazy"}
+                                                decoding="async"
+                                                width="320"
+                                                height="420"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
                                         </div>
@@ -242,6 +245,10 @@ const PromotedCarousel = ({ shops }) => {
                                                                             src={product.image}
                                                                             alt={product.name}
                                                                             className="w-full h-full object-cover"
+                                                                            loading="lazy"
+                                                                            decoding="async"
+                                                                            width="32"
+                                                                            height="32"
                                                                         />
                                                                     ) : (
                                                                         <div className="w-full h-full bg-gray-400 flex items-center justify-center">
@@ -293,8 +300,8 @@ const PromotedCarousel = ({ shops }) => {
                         onClick={() => goToSlide(idx)}
                         disabled={isTransitioning}
                         className={`transition-all duration-300 rounded-full ${idx === currentIndex
-                                ? 'bg-black w-8 h-2.5'
-                                : 'bg-gray-300 w-2.5 h-2.5 hover:bg-gray-500'
+                            ? 'bg-black w-8 h-2.5'
+                            : 'bg-gray-300 w-2.5 h-2.5 hover:bg-gray-500'
                             } disabled:cursor-not-allowed`}
                         aria-label={`Go to shop ${idx + 1}`}
                     />

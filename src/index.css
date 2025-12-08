@@ -60,3 +60,17 @@ img {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
+
+/* PERFORMANCE: Prevent layout shifts with aspect ratio */
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+/* PERFORMANCE: Reserve space for images to prevent CLS */
+img[width][height] {
+  height: auto;
+}
