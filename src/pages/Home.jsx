@@ -148,7 +148,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
 
       <SEO
         title="Amravati Wears Market - Local Clothing & Fashion Marketplace"
@@ -256,7 +256,7 @@ const Home = () => {
 
               {/* Mobile Carousel - Shows below button on mobile, above stats */}
               {!loading && promotedShops.length > 0 && (
-                <div className="lg:hidden mb-8" style={{ minHeight: '520px' }}>
+                <div className="lg:hidden mb-8 w-full max-w-full overflow-hidden" style={{ minHeight: '520px' }}>
                   <PromotedCarousel shops={promotedShops} />
                 </div>
               )}
@@ -425,7 +425,7 @@ const Home = () => {
             </div>
 
             {/* Horizontal Scrollable Container */}
-            <div className="relative">
+            <div className="relative -mx-4 px-4">
               <div
                 className="flex gap-4 md:gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}

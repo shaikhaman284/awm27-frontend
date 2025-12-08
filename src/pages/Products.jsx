@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { FiFilter, FiX, FiSearch, FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import { FiFilter, FiX, FiSearch, FiChevronDown, FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import apiService from '../services/api';
 import ProductCard from '../components/products/ProductCard';
 import toast from 'react-hot-toast';
@@ -158,7 +158,7 @@ const Products = () => {
   const activeFilterCount = Object.values(filters).filter(v => v && v !== 'newest').length;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
 
       <SEO
         title={getPageTitle()}
@@ -447,12 +447,15 @@ const Products = () => {
                   ))}
                 </div>
 
-                {/* Pagination placeholder */}
+                {/* Responsive Pagination */}
                 <div className="mt-12 mb-8">
                   <hr className="border-gray-200 mb-8" />
-                  <div className="flex items-center justify-between">
-                    <button className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
-                      ← Previous
+
+                  {/* Desktop Pagination */}
+                  <div className="hidden md:flex items-center justify-between">
+                    <button className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium flex items-center gap-2">
+                      <FiChevronLeft className="w-4 h-4" />
+                      Previous
                     </button>
                     <div className="flex gap-2">
                       {[1, 2, 3, '...', 8, 9, 10].map((page, idx) => (
@@ -467,8 +470,36 @@ const Products = () => {
                         </button>
                       ))}
                     </div>
-                    <button className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
-                      Next →
+                    <button className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium flex items-center gap-2">
+                      Next
+                      <FiChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Mobile Pagination */}
+                  <div className="flex md:hidden items-center justify-between gap-2">
+                    <button className="px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm flex items-center gap-1 flex-1 justify-center">
+                      <FiChevronLeft className="w-4 h-4" />
+                      Prev
+                    </button>
+                    <div className="flex gap-1.5">
+                      {[1, 2, 3, '...', 10].map((page, idx) => (
+                        <button
+                          key={idx}
+                          className={`w-9 h-9 rounded-lg font-medium transition text-sm ${page === 1
+                            ? 'bg-gray-100 text-black'
+                            : page === '...'
+                              ? 'text-gray-400 cursor-default'
+                              : 'hover:bg-gray-50 text-gray-600'
+                            }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <button className="px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm flex items-center gap-1 flex-1 justify-center">
+                      Next
+                      <FiChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
