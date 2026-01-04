@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiPhone, FiUser, FiLock, FiArrowLeft } from 'react-icons/fi';
+import { FiPhone, FiUser, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
-
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginWithOTP, testLogin } = useAuth();
+  const { loginWithOTP } = useAuth();
 
   const [step, setStep] = useState(1); // 1: phone & name, 2: OTP
   const [phone, setPhone] = useState('');
@@ -17,7 +16,17 @@ const Login = () => {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
-  const [useTestMode, setUseTestMode] = useState(true); // Toggle for test mode
+
+  // Cleanup reCAPTCHA when step changes back to 1
+  useEffect(() => {
+    if (step === 1) {
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        // Clear any previous reCAPTCHA instances
+        container.innerHTML = '';
+      }
+    }
+  }, [step]);
 
   // Generate dynamic title based on step
   const getPageTitle = () => {
@@ -49,16 +58,21 @@ const Login = () => {
 
     setLoading(true);
 
-    const result = await loginWithOTP.sendOTP(phone);
+    try {
+      const result = await loginWithOTP.sendOTP(phone);
 
-    setLoading(false);
-
-    if (result.success) {
-      setConfirmationResult(result.confirmationResult);
-      setStep(2);
-      toast.success('OTP sent to your phone');
-    } else {
-      toast.error(result.error || 'Failed to send OTP');
+      if (result.success) {
+        setConfirmationResult(result.confirmationResult);
+        setStep(2);
+        toast.success('OTP sent to your phone');
+      } else {
+        toast.error(result.error || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      toast.error('Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,49 +86,26 @@ const Login = () => {
 
     setLoading(true);
 
-    const result = await loginWithOTP.verifyOTP(
-      confirmationResult,
-      otp,
-      name,
-      phone
-    );
+    try {
+      const result = await loginWithOTP.verifyOTP(
+        confirmationResult,
+        otp,
+        name,
+        phone
+      );
 
-    setLoading(false);
-
-    if (result.success) {
-      toast.success('Login successful!');
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
-    } else {
-      toast.error(result.error || 'Invalid OTP');
-    }
-  };
-
-  const handleTestLogin = async (e) => {
-    e.preventDefault();
-
-    if (!phone || phone.length < 10) {
-      toast.error('Please enter valid 10-digit phone number');
-      return;
-    }
-
-    if (!name || name.trim().length < 2) {
-      toast.error('Please enter your name');
-      return;
-    }
-
-    setLoading(true);
-
-    const result = await testLogin(phone, name);
-
-    setLoading(false);
-
-    if (result.success) {
-      toast.success('Login successful!');
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
-    } else {
-      toast.error(result.error || 'Login failed');
+      if (result.success) {
+        toast.success('Login successful!');
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      } else {
+        toast.error(result.error || 'Invalid OTP');
+      }
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      toast.error('Failed to verify OTP. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,6 +117,7 @@ const Login = () => {
         url="https://awm27.shop/login"
         noindex={true}
       />
+
       <div className="max-w-md w-full">
         {/* Back Button */}
         <button
@@ -152,10 +144,7 @@ const Login = () => {
         <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl">
           {/* Step 1: Phone & Name */}
           {step === 1 && (
-            <form
-              onSubmit={useTestMode ? handleTestLogin : handleSendOTP}
-              className="space-y-6"
-            >
+            <form onSubmit={handleSendOTP} className="space-y-6">
               {/* Phone Number */}
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-3">
@@ -201,12 +190,10 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* reCAPTCHA Container */}
-              {!useTestMode && (
-                <div className="flex justify-center py-4">
-                  <div id="recaptcha-container"></div>
-                </div>
-              )}
+              {/* reCAPTCHA Container - VISIBLE for user interaction */}
+              <div className="flex justify-center py-4">
+                <div id="recaptcha-container"></div>
+              </div>
 
               {/* Submit Button */}
               <button
@@ -214,27 +201,32 @@ const Login = () => {
                 disabled={loading}
                 className="w-full py-4 px-6 bg-black text-white font-semibold rounded-full hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-lg shadow-lg hover:shadow-xl"
               >
-                {loading
-                  ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      Please wait...
-                    </span>
-                  )
-                  : useTestMode
-                    ? 'Continue'
-                    : 'Send OTP'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    Sending OTP...
+                  </span>
+                ) : (
+                  'Send OTP'
+                )}
               </button>
 
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+              {/* Security Note */}
+              <div className="mt-6 bg-gray-50 border border-gray-200 rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">Secure OTP Login</p>
+                    <p className="text-gray-600 text-xs mt-1">
+                      We'll send a one-time password to verify your phone number
+                    </p>
+                  </div>
                 </div>
-
               </div>
-
-
             </form>
           )}
 
@@ -262,10 +254,13 @@ const Login = () => {
                   Didn't receive the code?{' '}
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => {
+                      setStep(1);
+                      setOtp('');
+                    }}
                     className="text-black font-semibold hover:underline"
                   >
-                    Resend
+                    Resend OTP
                   </button>
                 </p>
               </div>
@@ -300,33 +295,6 @@ const Login = () => {
               </button>
             </form>
           )}
-
-          {/* Mode Toggle (Development Only) */}
-          {step === 1 && (
-            <div className="mt-6">
-              <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                      {useTestMode ? '🧪 Test Mode Active' : '🔐 Live OTP Mode'}
-                    </p>
-                    <p className="text-gray-600 text-xs mt-1">
-                      {useTestMode
-                        ? 'No OTP required - instant login for testing'
-                        : 'Real OTP verification with reCAPTCHA'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setUseTestMode(!useTestMode)}
-                    className="px-4 py-2 text-xs bg-black text-white rounded-full hover:bg-gray-800 transition font-semibold"
-                  >
-                    Switch
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer Text */}
@@ -340,7 +308,6 @@ const Login = () => {
             Privacy Policy
           </Link>
         </p>
-
       </div>
     </div>
   );
