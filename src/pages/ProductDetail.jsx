@@ -50,6 +50,42 @@ const ProductDetail = () => {
     return { hasDiscount: false, discountPercent: 0, mrp: null };
   }, [product?.mrp, product?.display_price]);
 
+  // Helper function to get color CSS value
+  const getColorStyle = (color) => {
+    const colorMap = {
+      // Existing
+      'olive': '#808000',
+      'green': '#008000',
+      'navy': '#000080',
+
+      // New light/dark shades
+      'light grey': '#D3D3D3',
+      'dark grey': '#696969',
+      'dark red': '#8B0000',
+      'maroon': '#800000',
+      'light pink': '#FFB6C1',
+      'hot pink': '#FF69B4',
+      'light blue': '#ADD8E6',
+      'dark blue': '#00008B',
+      'navy blue': '#000080',
+      'sky blue': '#87CEEB',
+      'turquoise': '#40E0D0',
+      'light green': '#90EE90',
+      'dark green': '#006400',
+      'mint green': '#98FF98',
+      'light yellow': '#FFFFE0',
+      'dark orange': '#FF8C00',
+      'peach': '#FFDAB9',
+      'lavender': '#E6E6FA',
+      'light brown': '#CD853F',
+      'beige': '#F5F5DC',
+      'cream': '#FFFDD0',
+      'gold': '#FFD700',
+      'silver': '#C0C0C0',
+    };
+
+    return colorMap[color.toLowerCase()] || color.toLowerCase();
+  };
   // Generate dynamic product schema with variants
   // Generate dynamic product schema with variants
   const getProductSchema = () => {
@@ -484,6 +520,7 @@ const ProductDetail = () => {
             <hr className="border-gray-300 mb-6" />
 
             {/* Color Selector */}
+            {/* Color Selector */}
             {product.colors?.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
@@ -492,7 +529,7 @@ const ProductDetail = () => {
                     {selectedColor && <span className="font-bold text-black ml-2">({selectedColor})</span>}
                   </label>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   {product.colors.map((color) => {
                     let isColorAvailable = true;
                     if (hasVariants && selectedSize) {
@@ -501,26 +538,39 @@ const ProductDetail = () => {
                       );
                     }
 
+                    // Special case: Printed/Textured
+                    if (color === 'Printed/Textured') {
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => setSelectedColor(color)}
+                          disabled={!isColorAvailable}
+                          className={`px-4 py-2 rounded-full border-2 font-semibold text-sm transition ${selectedColor === color
+                              ? 'border-black bg-black text-white'
+                              : isColorAvailable
+                                ? 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
+                        >
+                          🎨 Printed
+                        </button>
+                      );
+                    }
+
+                    // Regular color circle
                     return (
                       <button
                         key={color}
                         onClick={() => setSelectedColor(color)}
                         disabled={!isColorAvailable}
                         className={`w-10 h-10 rounded-full border-2 transition relative ${selectedColor === color
-                          ? 'border-black ring-2 ring-offset-2 ring-black'
-                          : isColorAvailable
-                            ? 'border-gray-300 hover:border-gray-400'
-                            : 'border-gray-200 opacity-40 cursor-not-allowed'
+                            ? 'border-black ring-2 ring-offset-2 ring-black'
+                            : isColorAvailable
+                              ? 'border-gray-300 hover:border-gray-400'
+                              : 'border-gray-200 opacity-40 cursor-not-allowed'
                           }`}
                         style={{
-                          backgroundColor:
-                            color === 'olive'
-                              ? '#808000'
-                              : color === 'green'
-                                ? '#008000'
-                                : color === 'navy'
-                                  ? '#000080'
-                                  : color.toLowerCase(),
+                          backgroundColor: getColorStyle(color),
                         }}
                         title={color}
                       >

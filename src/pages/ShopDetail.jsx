@@ -51,7 +51,11 @@ const ShopDetail = () => {
       const shopRes = await apiService.getShopDetail(id);
       setShop(shopRes.data);
 
-      const productsRes = await apiService.getProducts({ shop: id });
+      // FIXED: Load ALL products by setting a high page_size or making multiple requests
+      const productsRes = await apiService.getProducts({
+        shop: id,
+        page_size: 1000 // Get all products (adjust if shop has more than 1000 products)
+      });
       setAllProducts(productsRes.data.results || []);
     } catch (error) {
       console.error('Error loading shop details:', error);
@@ -286,71 +290,136 @@ const ShopDetail = () => {
       </div>
 
       {/* Shop Header */}
-      <section className="bg-gray-50 border-b border-gray-200">
-        <div className="container mx-auto px-4 py-12 md:py-16">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            {/* Shop Logo */}
-            <div className="flex-shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-3xl overflow-hidden shadow-lg border-4 border-white">
-                {shop.shop_image ? (
-                  <img
-                    src={shop.shop_image}
-                    alt={shop.shop_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                    <span className="text-6xl">🏪</span>
+      {/* Shop Header */}
+      <section className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          <div className="grid md:grid-cols-12 gap-8 items-center">
+            {/* Left: Shop Logo - BIG & PROMINENT */}
+            <div className="md:col-span-4 lg:col-span-3">
+              <div className="relative group mx-auto max-w-xs">
+                {/* Main Image Container */}
+                <div className="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-white ring-4 ring-gray-900 transition-all duration-300 group-hover:shadow-3xl group-hover:scale-[1.02]">
+                  {shop.shop_image ? (
+                    <>
+                      <img
+                        src={shop.shop_image}
+                        alt={`${shop.shop_name} logo`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.querySelector('.fallback-icon').style.display = 'flex';
+                        }}
+                      />
+                      {/* Image Overlay on Hover */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </>
+                  ) : null}
+
+                  {/* Fallback Icon */}
+                  <div
+                    className="fallback-icon absolute inset-0 flex items-center justify-center bg-gray-100"
+                    style={{ display: shop.shop_image ? 'none' : 'flex' }}
+                  >
+                    <div className="text-center">
+                      <span className="text-9xl block mb-2">🏪</span>
+                      <p className="text-sm font-semibold text-gray-600 px-4">No Image</p>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                {/* Verified Badge */}
+                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border-4 border-white">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-bold">Verified</span>
+                </div>
               </div>
             </div>
 
-            {/* Shop Info */}
-            <div className="flex-1">
-              <h1 className="text-3xl md:text-5xl font-bold mb-4">{shop.shop_name}</h1>
+            {/* Right: Shop Info */}
+            <div className="md:col-span-8 lg:col-span-9">
+              {/* Shop Name & Stats */}
+              <div className="mb-6">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight">
+                  {shop.shop_name}
+                </h1>
 
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                {/* Address */}
-                <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-200">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <FiMapPin className="w-5 h-5 text-gray-700" />
+                {/* Quick Stats Badges */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
+                    <FiPackage className="w-5 h-5 text-gray-900" />
+                    <span className="text-base font-bold text-gray-900">{allProducts.length}</span>
+                    <span className="text-sm text-gray-600 font-medium">Products</span>
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm text-gray-500 mb-1">Location</p>
-                    <p className="text-gray-900">{shop.address}</p>
-                    <p className="text-gray-900">{shop.city} - {shop.pincode}</p>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
+                    <FiMapPin className="w-5 h-5 text-gray-900" />
+                    <span className="text-base font-bold text-gray-900">{shop.city}</span>
                   </div>
-                </div>
-
-                {/* Products Count */}
-                <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-200">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <FiPackage className="w-5 h-5 text-gray-700" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm text-gray-500 mb-1">Products</p>
-                    <p className="text-2xl font-bold">{allProducts.length}</p>
-                    <p className="text-sm text-gray-600">Items Available</p>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full shadow-md">
+                    <span className="text-sm font-bold">✓ COD Available</span>
                   </div>
                 </div>
               </div>
 
-              {/* Call Button */}
-              <a
-                href={`tel:${shop.contact_number}`}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition shadow-lg"
-              >
-                <FiPhone className="w-5 h-5" />
-                Call Shop
-              </a>
+              {/* Contact Cards */}
+              <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                {/* Address Card */}
+                <div className="group flex items-start gap-4 p-5 bg-white rounded-2xl shadow-md border-2 border-gray-200 hover:border-black hover:shadow-lg transition-all duration-300">
+                  <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-black group-hover:scale-110 transition-all">
+                    <FiMapPin className="w-7 h-7 text-gray-900 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs text-gray-600 mb-1.5 uppercase tracking-wider">Store Location</p>
+                    <p className="text-gray-900 font-semibold leading-relaxed text-sm">{shop.address}</p>
+                    <p className="text-gray-900 font-bold text-base mt-1">{shop.city} - {shop.pincode}</p>
+                  </div>
+                </div>
+
+                {/* Contact Card */}
+                <div className="group flex items-start gap-4 p-5 bg-white rounded-2xl shadow-md border-2 border-gray-200 hover:border-black hover:shadow-lg transition-all duration-300">
+                  <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-black group-hover:scale-110 transition-all">
+                    <FiPhone className="w-7 h-7 text-gray-900 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs text-gray-600 mb-1.5 uppercase tracking-wider">Contact Number</p>
+                    <a
+                      href={`tel:${shop.contact_number}`}
+                      className="text-gray-900 font-bold text-xl hover:text-black transition block"
+                    >
+                      {shop.contact_number}
+                    </a>
+                    <p className="text-sm text-gray-600 font-medium mt-1">Call for inquiries</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+
+                <a href={`tel:${shop.contact_number}`}
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105"
+                >
+                  <FiPhone className="w-5 h-5" />
+                  <span>Call Now</span>
+                </a>
+
+                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address + ', ' + shop.city)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-white text-gray-900 font-bold rounded-full hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-lg border-2 border-gray-900"
+                >
+                  <FiMapPin className="w-5 h-5" />
+                  <span>Get Directions</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Products Section */}
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      < div className="container mx-auto px-4 py-6 md:py-8" >
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <aside
@@ -586,8 +655,8 @@ const ShopDetail = () => {
             )}
           </main>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

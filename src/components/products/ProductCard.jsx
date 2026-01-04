@@ -102,11 +102,37 @@ const ProductCard = React.memo(({ product }) => {
   // PERFORMANCE: Memoize color style calculation
   const getColorStyle = useCallback((color) => {
     const colorMap = {
-      olive: '#808000',
-      green: '#008000',
-      navy: '#000080',
+      // Existing
+      'olive': '#808000',
+      'green': '#008000',
+      'navy': '#000080',
+
+      // New light/dark shades
+      'light grey': '#D3D3D3',
+      'dark grey': '#696969',
+      'dark red': '#8B0000',
+      'maroon': '#800000',
+      'light pink': '#FFB6C1',
+      'hot pink': '#FF69B4',
+      'light blue': '#ADD8E6',
+      'dark blue': '#00008B',
+      'navy blue': '#000080',
+      'sky blue': '#87CEEB',
+      'turquoise': '#40E0D0',
+      'light green': '#90EE90',
+      'dark green': '#006400',
+      'mint green': '#98FF98',
+      'light yellow': '#FFFFE0',
+      'dark orange': '#FF8C00',
+      'peach': '#FFDAB9',
+      'lavender': '#E6E6FA',
+      'light brown': '#CD853F',
+      'beige': '#F5F5DC',
+      'cream': '#FFFDD0',
+      'gold': '#FFD700',
+      'silver': '#C0C0C0',
     };
-    return colorMap[color] || color.toLowerCase();
+    return colorMap[color.toLowerCase()] || color.toLowerCase();
   }, []);
 
   return (
@@ -217,18 +243,34 @@ const ProductCard = React.memo(({ product }) => {
             {product.colors?.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-gray-700 font-semibold">Colors:</span>
-                <div className="flex gap-1">
-                  {product.colors.slice(0, 4).map((color, idx) => (
-                    <div
-                      key={`${color}-${idx}`}
-                      className="w-4 h-4 rounded-full border-2 border-gray-400 shadow-sm"
-                      style={{
-                        backgroundColor: getColorStyle(color),
-                      }}
-                      title={color}
-                      aria-label={color}
-                    />
-                  ))}
+                <div className="flex gap-1 flex-wrap">
+                  {product.colors.slice(0, 4).map((color, idx) => {
+                    // Special case: Printed/Textured
+                    if (color === 'Printed/Textured') {
+                      return (
+                        <span
+                          key={`${color}-${idx}`}
+                          className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-semibold"
+                          title={color}
+                        >
+                          🎨
+                        </span>
+                      );
+                    }
+
+                    // Regular color circle
+                    return (
+                      <div
+                        key={`${color}-${idx}`}
+                        className="w-4 h-4 rounded-full border-2 border-gray-400 shadow-sm"
+                        style={{
+                          backgroundColor: getColorStyle(color),
+                        }}
+                        title={color}
+                        aria-label={color}
+                      />
+                    );
+                  })}
                   {product.colors.length > 4 && (
                     <span className="text-xs text-gray-700 font-medium">
                       +{product.colors.length - 4}

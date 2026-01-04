@@ -33,6 +33,39 @@
   <!-- PERFORMANCE: Preload critical assets -->
   <!-- Preload will be added dynamically by Vite build process -->
 
+  <!-- PERFORMANCE: Inline Critical CSS for faster initial paint -->
+  <style>
+    /* Critical CSS - Above the fold styles */
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #root {
+      min-height: 100vh;
+    }
+
+    /* Loading spinner - visible immediately */
+    .loading-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Prevent layout shift */
+    * {
+      box-sizing: border-box;
+    }
+
+    /* Header placeholder to prevent CLS */
+    header {
+      height: 64px;
+    }
+  </style>
+
   <meta name="theme-color" content="#000000" />
 
   <!-- SEO Meta Tags -->
