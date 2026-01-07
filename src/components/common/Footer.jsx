@@ -45,7 +45,7 @@ const Footer = () => {
             <p class="font-semibold text-blue-800">📧 Email Support</p>
             <p class="text-sm text-blue-700 mt-1">
               For any queries or concerns, please email us at:<br/>
-              <strong>support@awm27.shop</strong>
+              <strong>awm27shop@gmail.com</strong>
             </p>
             <p class="text-sm text-blue-700 mt-2">
               We typically respond within 24-48 hours.
@@ -162,7 +162,7 @@ const Footer = () => {
             <p class="font-semibold text-blue-800">📞 Contact Us</p>
             <p class="text-sm text-blue-700 mt-1">
               For any queries or concerns, please contact us at:<br/>
-              <strong>support@awm27.shop</strong>
+              <strong>awm27shop@gmail.com</strong>
             </p>
           </div>
         </div>
@@ -258,7 +258,7 @@ const Footer = () => {
               <h3 class="font-semibold text-blue-900 mb-2">Contact Us</h3>
               <p class="text-blue-800">
                 If you have any questions about this Privacy Policy, please contact us at:<br/>
-                <strong>support@awm27.shop</strong>
+                <strong>awm27shop@gmail.com</strong>
               </p>
             </div>
           </div>
@@ -310,18 +310,18 @@ const Footer = () => {
                 Shop from your favorite local cloth stores in Amravati. Quality products, delivered to your doorstep.
               </p>
               <div className="flex gap-3">
-                <a href="#" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
+                {/* <a href="#" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
                   <FiTwitter className="w-4 h-4" />
                 </a>
                 <a href="#" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
                   <FiFacebook className="w-4 h-4" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
+                </a> */}
+                <a href="https://www.instagram.com/awm27.shop?igsh=MXh4dzl3ZnUzcGFsNw==" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
                   <FiInstagram className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
+                {/* <a href="#" className="w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-all">
                   <FiGithub className="w-4 h-4" />
-                </a>
+                </a> */}
               </div>
             </div>
 
@@ -378,7 +378,7 @@ const Footer = () => {
             <div>
               <h4 className="font-bold mb-6 text-base uppercase tracking-wider">CONTACT</h4>
               <ul className="space-y-3 text-sm text-gray-600">
-                <li>Email: support@awm27.shop</li>
+                <li>Email: awm27shop@gmail.com</li>
                 <li>Location: Amravati, Maharashtra</li>
                 <li className="text-xs mt-4 text-gray-500">
                   Beta Testing Phase

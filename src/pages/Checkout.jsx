@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiCheck, FiChevronRight, FiEdit2, FiPackage, FiTag } from 'react-icons/fi';
+import { FiCheck, FiChevronRight, FiEdit2, FiPackage, FiTag, FiX } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/api';
@@ -17,6 +17,7 @@ const Checkout = () => {
   const [step, setStep] = useState(1); // 1: Address, 2: Payment, 3: Review
   const [loading, setLoading] = useState(false);
   const isOrderPlaced = useRef(false); // Track if order was successfully placed
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Get applied coupon from Cart.jsx via navigation state
   const [appliedCoupon, setAppliedCoupon] = useState(location.state?.appliedCoupon || null);
@@ -149,6 +150,11 @@ const Checkout = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTermsConditions = (e) => {
+    e.preventDefault();
+    setShowTermsModal(true);
   };
 
   return (
@@ -613,7 +619,10 @@ const Checkout = () => {
                   />
                   <span className="text-sm text-gray-700">
                     I agree to the{' '}
-                    <button className="text-black font-semibold hover:underline">
+                    <button
+                      onClick={handleTermsConditions}
+                      className="text-black font-semibold hover:underline"
+                    >
                       Terms & Conditions
                     </button>{' '}
                     and confirm that I will pay{' '}
@@ -649,6 +658,94 @@ const Checkout = () => {
           )}
         </div>
       </div>
+
+      {/* Terms & Conditions Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Terms & Conditions - Beta Version</h2>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition"
+              >
+                <FiX className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                  <p className="font-semibold text-yellow-800">🧪 Beta Testing Notice</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    This is an MVP (Minimum Viable Product) app to validate the city marketplace concept for Amravati.
+                    We appreciate your participation in this testing phase!
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded">
+                  <p className="font-semibold text-gray-800">💳 Payment Terms</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    • Currently accepting <strong>Cash on Delivery (COD)</strong> only<br />
+                    • Payment to be made to delivery personnel upon receipt<br />
+                    • Please keep exact change ready
+                  </p>
+                </div>
+
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+                  <p className="font-semibold text-red-800">🔄 Returns & Refunds Policy</p>
+                  <p className="text-sm text-red-700 mt-1">
+                    Due to the beta testing phase, we are currently <strong>unable to provide return or refund services</strong>.
+                  </p>
+                  <p className="text-sm text-red-700 mt-2">
+                    However, we may consider <strong>product replacement</strong> on a case-by-case basis, subject to:
+                  </p>
+                  <ul className="text-sm text-red-700 mt-2 ml-4 list-disc">
+                    <li>Manufacturing defects or damage during delivery</li>
+                    <li>Wrong product delivered</li>
+                    <li>Request made within 24 hours of delivery</li>
+                    <li>Product in original condition with tags intact</li>
+                  </ul>
+                  <p className="text-sm text-red-700 mt-2">
+                    Please contact customer support for replacement requests.
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded">
+                  <p className="font-semibold text-gray-800">📝 General Terms</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    • All prices are in Indian Rupees (₹)<br />
+                    • Prices are subject to change without notice<br />
+                    • Product availability is subject to stock<br />
+                    • Orders are subject to seller confirmation<br />
+                    • We reserve the right to cancel orders in case of pricing errors
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded">
+                  <p className="font-semibold text-blue-800">📞 Contact Us</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    For any queries or concerns, please contact us at:<br />
+                    <strong>awm27shop@gmail.com</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="px-6 py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

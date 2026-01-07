@@ -25,7 +25,7 @@ const Header = () => {
       {/* Top Banner */}
       <div className="bg-black text-white text-center py-2 px-4 text-xs sm:text-sm">
         <p>
-          Sign up and get 20% off on your first order.{' '}
+          Sign up and place your first order online.{' '}
           <Link to="/login" className="underline font-semibold hover:text-gray-300">
             Sign Up Now
           </Link>
