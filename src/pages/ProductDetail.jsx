@@ -50,6 +50,11 @@ const ProductDetail = () => {
     return { hasDiscount: false, discountPercent: 0, mrp: null };
   }, [product?.mrp, product?.display_price]);
 
+  // Helper function to format price (remove .00)
+  const formatPrice = (price) => {
+    return Number(price) % 1 === 0 ? Math.floor(price) : price;
+  };
+
   // Helper function to get color CSS value
   const getColorStyle = (color) => {
     const colorMap = {
@@ -447,7 +452,7 @@ const ProductDetail = () => {
                       src={img}
                       alt=""
                       loading="lazy"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </button>
                 ))
@@ -465,7 +470,7 @@ const ProductDetail = () => {
                   src={images[selectedImage]}
                   alt={product.name}
                   loading={selectedImage === 0 ? "eager" : "lazy"}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-9xl">
@@ -499,11 +504,11 @@ const ProductDetail = () => {
 
             {/* Price Section - UPDATED with real MRP discount */}
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold text-gray-900">₹{product.display_price}</span>
+              <span className="text-3xl font-bold text-gray-900">₹{formatPrice(product.display_price)}</span>
               {priceInfo.hasDiscount && (
                 <>
                   <span className="text-2xl text-gray-500 font-bold line-through">
-                    ₹{priceInfo.mrp}
+                    ₹{formatPrice(priceInfo.mrp)}
                   </span>
                   <span className="text-sm font-bold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
                     -{priceInfo.discountPercent}%
@@ -546,10 +551,10 @@ const ProductDetail = () => {
                           onClick={() => setSelectedColor(color)}
                           disabled={!isColorAvailable}
                           className={`px-4 py-2 rounded-full border-2 font-semibold text-sm transition ${selectedColor === color
-                              ? 'border-black bg-black text-white'
-                              : isColorAvailable
-                                ? 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            ? 'border-black bg-black text-white'
+                            : isColorAvailable
+                              ? 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                              : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
                             }`}
                         >
                           🎨 Printed
@@ -564,10 +569,10 @@ const ProductDetail = () => {
                         onClick={() => setSelectedColor(color)}
                         disabled={!isColorAvailable}
                         className={`w-10 h-10 rounded-full border-2 transition relative ${selectedColor === color
-                            ? 'border-black ring-2 ring-offset-2 ring-black'
-                            : isColorAvailable
-                              ? 'border-gray-300 hover:border-gray-400'
-                              : 'border-gray-200 opacity-40 cursor-not-allowed'
+                          ? 'border-black ring-2 ring-offset-2 ring-black'
+                          : isColorAvailable
+                            ? 'border-gray-300 hover:border-gray-400'
+                            : 'border-gray-200 opacity-40 cursor-not-allowed'
                           }`}
                         style={{
                           backgroundColor: getColorStyle(color),

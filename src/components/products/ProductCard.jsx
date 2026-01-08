@@ -84,6 +84,11 @@ const ProductCard = React.memo(({ product }) => {
     };
   }, [hasVariants, product.stock_quantity, product.variants]);
 
+  // Helper function to format price (remove .00)
+  const formatPrice = useCallback((price) => {
+    return Number(price) % 1 === 0 ? Math.floor(price) : price;
+  }, []);
+
   // PERFORMANCE: Memoize event handler to prevent recreation on each render
   const handleQuickAdd = useCallback(
     (e) => {
@@ -216,12 +221,12 @@ const ProductCard = React.memo(({ product }) => {
         {/* Price Section - UPDATED with real MRP discount */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xl md:text-2xl font-bold text-gray-900">
-            ₹{product.display_price}
+            ₹{formatPrice(product.display_price)}
           </span>
           {priceInfo.hasDiscount && (
             <>
               <span className="text-lg md:text-xl font-bold text-gray-500 line-through">
-                ₹{priceInfo.mrp}
+                ₹{formatPrice(priceInfo.mrp)}
               </span>
               <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">
                 -{priceInfo.discountPercent}%
