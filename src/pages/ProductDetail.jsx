@@ -332,9 +332,28 @@ const ProductDetail = () => {
     if (!product) return;
 
     if (product.variants && product.variants.length > 0) {
-      const variant = product.variants.find(
-        v => v.size === selectedSize && v.color === selectedColor
-      );
+      // Determine what attributes this product has
+      const hasColors = product.colors && product.colors.length > 0;
+      const hasSizes = product.sizes && product.sizes.length > 0;
+
+      let variant;
+
+      if (hasSizes && hasColors) {
+        // Product has both size and color - match both
+        variant = product.variants.find(
+          v => v.size === selectedSize && v.color === selectedColor
+        );
+      } else if (hasSizes && !hasColors) {
+        // Product has only sizes - match size and color should be null
+        variant = product.variants.find(
+          v => v.size === selectedSize && v.color === null
+        );
+      } else if (!hasSizes && hasColors) {
+        // Product has only colors - match color and size should be null
+        variant = product.variants.find(
+          v => v.color === selectedColor && v.size === null
+        );
+      }
 
       if (variant) {
         setSelectedVariant(variant);
@@ -537,10 +556,20 @@ const ProductDetail = () => {
                 <div className="flex gap-3 flex-wrap">
                   {product.colors.map((color) => {
                     let isColorAvailable = true;
-                    if (hasVariants && selectedSize) {
-                      isColorAvailable = product.variants.some(
-                        v => v.color === color && v.size === selectedSize && v.stock_quantity > 0
-                      );
+                    if (hasVariants) {
+                      // Check if product has sizes
+                      const hasSizes = product.sizes && product.sizes.length > 0;
+                      if (hasSizes && selectedSize) {
+                        // Product has both sizes and colors - match both
+                        isColorAvailable = product.variants.some(
+                          v => v.color === color && v.size === selectedSize && v.stock_quantity > 0
+                        );
+                      } else if (!hasSizes) {
+                        // Product has only colors - match color with null size
+                        isColorAvailable = product.variants.some(
+                          v => v.color === color && v.size === null && v.stock_quantity > 0
+                        );
+                      }
                     }
 
                     // Special case: Printed/Textured
@@ -600,10 +629,20 @@ const ProductDetail = () => {
                 <div className="flex flex-wrap gap-3">
                   {product.sizes.map((size) => {
                     let isSizeAvailable = true;
-                    if (hasVariants && selectedColor) {
-                      isSizeAvailable = product.variants.some(
-                        v => v.size === size && v.color === selectedColor && v.stock_quantity > 0
-                      );
+                    if (hasVariants) {
+                      // Check if product has colors
+                      const hasColors = product.colors && product.colors.length > 0;
+                      if (hasColors && selectedColor) {
+                        // Product has both sizes and colors - match both
+                        isSizeAvailable = product.variants.some(
+                          v => v.size === size && v.color === selectedColor && v.stock_quantity > 0
+                        );
+                      } else if (!hasColors) {
+                        // Product has only sizes - match size with null color
+                        isSizeAvailable = product.variants.some(
+                          v => v.size === size && v.color === null && v.stock_quantity > 0
+                        );
+                      }
                     }
 
                     return (
